@@ -1,0 +1,44 @@
+.signup-page {
+  margin: 50px auto;
+  width: 25%;
+  background-color: white;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 1px 1px 8px rgba(0, 0, 0, 0.065);
+}
+
+.signup-form .signup-inputGroup {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.signup-form .signup-inputGroup label {
+  margin-top: 10px;
+}
+
+.signup-form .signup-inputGroup input {
+  margin-top: 5px;
+  padding: 10px;
+}
+
+.signup-btn {
+  margin-top: 10px;
+}
+
+.signup-login {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.signup-login .signup-btn-primary {
+  width: 50%;
+}
+
+.signup-page h3 {
+  text-align: center;
+  font-weight: bold;
+  color: darkcyan;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.075);
+}
