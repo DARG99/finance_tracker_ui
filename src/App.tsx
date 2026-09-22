@@ -1,25 +1,31 @@
-import Signup from "./signup/Signup"
+import { RouterProvider, createBrowserRouter, Outlet } from "react-router-dom";
+import Signup from "./signup/Signup";
 import Login from "./login/Login";
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import Dashboard from "./dashboard/Dashboard";
+import RequireAuth from "./auth/RequireAuth";
+
+const Layout = () => (
+  <div className="App">
+    <Outlet />
+  </div>
+);
+
+const router = createBrowserRouter([
+  {
+    element: <Layout />,
+    children: [
+      { path: "/", element: <Signup /> },
+      { path: "/login", element: <Login /> },
+      {
+        element: <RequireAuth />,
+        children: [{ path: "/dashboard", element: <Dashboard /> }],
+      },
+    ],
+  },
+]);
 
 function App() {
-
-  const route = createBrowserRouter([
-    {
-      path:"/",
-      element:<Signup />
-    },
-        {
-      path:"/login",
-      element: <Login />
-    }
-    
-  ]);
-  return(
-    <div className="App">
-      <RouterProvider router={route}></RouterProvider>
-    </div>
-  )
+  return <RouterProvider router={router} />;
 }
 
 export default App;
