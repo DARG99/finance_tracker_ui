@@ -1,0 +1,64 @@
+/* Fill the space above the navigation without clipping taller content. */
+.transaction-page > main {
+  min-height: calc(100dvh - 3.5rem - env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+}
+
+.transaction-page > main > .row,
+.transaction-page .card,
+.transaction-page form {
+  flex: 1;
+}
+
+.transaction-column,
+.transaction-page .card-body,
+.transaction-page form,
+.transaction-page fieldset {
+  display: flex;
+  flex-direction: column;
+}
+
+.transaction-page fieldset {
+  flex: 1;
+  min-width: 0;
+}
+
+.transaction-page .transaction-submit {
+  margin-top: auto !important;
+}
+
+@media (max-width: 767.98px) {
+  .transaction-page .card-body {
+    padding: clamp(0.75rem, 2dvh, 1.25rem) !important;
+  }
+
+  .transaction-page .mb-3,
+  .transaction-page .mb-4 {
+    margin-bottom: clamp(0.625rem, 1.8dvh, 1rem) !important;
+  }
+
+  .transaction-page .form-label {
+    margin-bottom: 0.25rem;
+  }
+
+  .transaction-page .form-control,
+  .transaction-page .form-select,
+  .transaction-page .btn {
+    min-height: 44px;
+    padding-top: clamp(0.5rem, 1.4dvh, 0.875rem) !important;
+    padding-bottom: clamp(0.5rem, 1.4dvh, 0.875rem) !important;
+  }
+
+  .transaction-page .form-control,
+  .transaction-page .form-select {
+    min-width: 0;
+    max-width: 100%;
+    font-size: 1rem;
+  }
+
+  .transaction-page .alert {
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.625rem;
+  }
+}

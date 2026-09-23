@@ -1,0 +1,63 @@
+.dashboard-total {
+  font-size: clamp(1.1rem, 2.5vw, 1.9rem);
+  overflow-wrap: anywhere;
+}
+
+.dashboard-chart {
+  height: 230px;
+}
+
+.dashboard-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-bottom: 28px;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+}
+
+.dashboard-plot {
+  display: grid;
+  gap: clamp(2px, 1vw, 12px);
+  flex: 1;
+  min-width: 0;
+  background: repeating-linear-gradient(to top, transparent 0, transparent calc(50% - 1px), #e9ecef calc(50% - 1px), #e9ecef 50%);
+  background-size: 100% calc(100% - 28px);
+  background-repeat: no-repeat;
+}
+
+.dashboard-month {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.dashboard-bar-space {
+  flex: 1;
+  width: 65%;
+  max-width: 72px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.dashboard-month-bar {
+  width: 100%;
+  background: #198754;
+  border-radius: 6px 6px 0 0;
+}
+
+.dashboard-month > span {
+  font-size: clamp(0.6rem, 2vw, 0.875rem);
+}
+
+.dashboard-category-track {
+  height: 12px;
+  border-radius: 999px;
+  background: #edf0f2;
+}
+
+.dashboard-account-icon {
+  width: 48px;
+  height: 48px;
+}

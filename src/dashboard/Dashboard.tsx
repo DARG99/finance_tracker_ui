@@ -1,9 +1,30 @@
 import { useNavigate } from "react-router-dom";
-import { Button, Card, Col, Container, Navbar, Row } from "react-bootstrap";
+import { Badge, Button, Card, Col, Container, Navbar, Row } from "react-bootstrap";
 import { authService } from "../services/authService";
+import { mockDashboardData, type DashboardData } from "./dashboardData";
+import "./Dashboard.css";
 
-export default function Dashboard() {
+const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const categoryColors = ["#198754", "#526ac7", "#b36b12", "#8b5bb5", "#16808a"];
+
+// Currency is presentation configuration; the response contains numeric amounts.
+export default function Dashboard({ data = mockDashboardData, currency = "EUR", isMock = true }: {
+  data?: DashboardData;
+  currency?: string;
+  isMock?: boolean;
+}) {
   const navigate = useNavigate();
+  const money = new Intl.NumberFormat(undefined, { style: "currency", currency });
+  const compactMoney = new Intl.NumberFormat(undefined, { style: "currency", currency, notation: "compact", maximumFractionDigits: 1 });
+  const monthly = [...data.monthlySpending].sort((a, b) => a.month - b.month);
+  const monthlyMax = Math.max(1, ...monthly.map((item) => item.amount));
+  const categoryMax = Math.max(1, ...data.spendingByCategory.map((item) => item.amount));
+  const summary = [
+    { label: "Income", amount: data.allTimeIncome, hint: "All time", tone: "success", icon: "arrow-down-left" },
+    { label: "Expenses", amount: data.allTimeExpense, hint: "All time", tone: "danger", icon: "arrow-up-right" },
+    { label: "Cash flow", amount: data.cashFlow, hint: "Income minus expenses", tone: data.cashFlow < 0 ? "danger" : "primary", icon: "arrow-left-right" },
+    { label: "Current money", amount: data.currentTrackedMoney, hint: "Tracked account balances", tone: data.currentTrackedMoney < 0 ? "danger" : "success", icon: "wallet2" },
+  ];
 
   function signOut() {
     authService.logout();
@@ -11,7 +32,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-vh-100 bg-light text-body">
+    <div className="dashboard-page bg-light text-body">
       <Navbar as="header" className="bg-white border-bottom py-3">
         <Container className="gap-2 px-3 px-sm-4">
           <Navbar.Brand as="span" className="fw-bold m-0 text-wrap">Finance Tracker</Navbar.Brand>
@@ -19,36 +40,109 @@ export default function Dashboard() {
         </Container>
       </Navbar>
       <Container as="main" className="px-3 px-sm-4 py-4 py-md-5">
-        <div className="d-flex flex-wrap align-items-baseline justify-content-between gap-3 mb-4">
-          <h1 className="h3 mb-0">Dashboard</h1>
-          <span className="text-secondary">Overview</span>
-        </div>
+        <header className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+          <div>
+            <h1 className="h3 mb-1">Dashboard</h1>
+            <p className="text-secondary mb-0">Your money at a glance.</p>
+          </div>
+          {isMock && <Badge bg="warning" text="dark" className="px-3 py-2">Preview · Sample data</Badge>}
+        </header>
+
         <section aria-label="Financial summary">
-          <Row xs={1} md={3} className="g-3 g-lg-4">
-          {[
-            { label: "Total balance", tone: "secondary" },
-            { label: "Income", tone: "success" },
-            { label: "Expenses", tone: "danger" },
-          ].map(({ label, tone }) => (
-            <Col key={label}>
-              <Card className="h-100 rounded-2">
-                <Card.Body className="p-3 p-sm-4">
-                  <Card.Title as="h2" className={`fs-6 text-${tone}`}>{label}</Card.Title>
-                  <p className="fs-2 my-2 my-sm-3" aria-label="Not available">&mdash;</p>
-                  <span className="small text-secondary">No data available</span>
+          <Row xs={2} lg={4} className="g-3">
+            {summary.map((item) => <Col key={item.label}>
+              <Card className="h-100 border-0 shadow-sm">
+                <Card.Body className="p-3 p-md-4">
+                  <div className="d-flex align-items-center gap-2 mb-3">
+                    <i className={`bi bi-${item.icon} text-${item.tone}`} aria-hidden="true" />
+                    <h2 className="fs-6 mb-0">{item.label}</h2>
+                  </div>
+                  <p className={`dashboard-total fw-semibold text-${item.tone} mb-2`}>{money.format(item.amount)}</p>
+                  <p className="small text-secondary mb-0">{item.hint}</p>
                 </Card.Body>
               </Card>
-            </Col>
-          ))}
+            </Col>)}
           </Row>
         </section>
-        <section className="mt-4 mt-md-5 border-top pt-4" aria-labelledby="transactions-title">
-          <h2 id="transactions-title" className="h5">Recent transactions</h2>
-          <div className="text-center py-5 px-3">
-            <img className="mb-4" src="/transactions-empty.svg" alt="" width="96" height="80" />
-            <h3 className="h6">No transactions to display</h3>
-            <p className="text-secondary">Your income and expenses will appear here.</p>
+
+        <Row className="g-3 g-lg-4 mt-1 mt-md-2">
+          <Col xs={12} lg={7}>
+            <Card as="section" className="h-100 border-0 shadow-sm" aria-labelledby="monthly-title">
+              <Card.Body className="p-3 p-md-4">
+                <h2 id="monthly-title" className="h5 mb-1">Monthly spending</h2>
+                <p className="small text-secondary mb-4">Expenses by month</p>
+                {monthly.length === 0 ? <p className="text-secondary py-5 text-center">No monthly spending available.</p> : <>
+                  <div className="dashboard-chart d-flex gap-2" aria-hidden="true">
+                    <div className="dashboard-axis small text-secondary">
+                      <span>{compactMoney.format(monthlyMax)}</span>
+                      <span>{compactMoney.format(monthlyMax / 2)}</span>
+                      <span>{money.format(0)}</span>
+                    </div>
+                    <div className="dashboard-plot" style={{ gridTemplateColumns: `repeat(${monthly.length}, minmax(0, 1fr))` }}>
+                      {monthly.map((item) => <div className="dashboard-month" key={item.month} title={`${months[item.month - 1]}: ${money.format(item.amount)}`}>
+                        <div className="dashboard-bar-space">
+                          <div className="dashboard-month-bar" style={{ height: `${item.amount / monthlyMax * 100}%` }} />
+                        </div>
+                        <span className="small text-secondary mt-2">{months[item.month - 1]}</span>
+                      </div>)}
+                    </div>
+                  </div>
+                  <details className="small mt-3">
+                    <summary className="text-secondary">View monthly amounts</summary>
+                    <table className="table table-sm mt-2 mb-0">
+                      <caption className="visually-hidden">Monthly spending amounts</caption>
+                      <thead><tr><th scope="col">Month</th><th scope="col" className="text-end">Amount</th></tr></thead>
+                      <tbody>{monthly.map((item) => <tr key={item.month}><th scope="row" className="fw-normal">{months[item.month - 1]}</th><td className="text-end">{money.format(item.amount)}</td></tr>)}</tbody>
+                    </table>
+                  </details>
+                </>}
+              </Card.Body>
+            </Card>
+          </Col>
+          <Col xs={12} lg={5}>
+            <Card as="section" className="h-100 border-0 shadow-sm" aria-labelledby="category-title">
+              <Card.Body className="p-3 p-md-4">
+                <h2 id="category-title" className="h5 mb-1">Spending by category</h2>
+                <p className="small text-secondary mb-4">Spending breakdown</p>
+                {data.spendingByCategory.length === 0 ? <p className="text-secondary py-5 text-center">No category spending available.</p> :
+                  <ul className="list-unstyled d-grid gap-4 mb-0">
+                    {data.spendingByCategory.map((item, index) => <li key={item.categoryId}>
+                      <div className="d-flex flex-wrap justify-content-between gap-2 mb-2">
+                        <span className="text-break">{item.categoryName}</span>
+                        <span className="fw-semibold">{money.format(item.amount)}</span>
+                      </div>
+                      <div className="dashboard-category-track" aria-hidden="true">
+                        <div className="h-100 rounded-pill" style={{ width: `${item.amount / categoryMax * 100}%`, backgroundColor: categoryColors[index % categoryColors.length] }} />
+                      </div>
+                    </li>)}
+                  </ul>}
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+
+        <section className="mt-4 mt-md-5" aria-labelledby="accounts-title">
+          <div className="d-flex align-items-center gap-2 mb-3">
+            <h2 id="accounts-title" className="h5 mb-0">Funding sources</h2>
+            <Badge bg="secondary" pill>{data.fundingSources.length}</Badge>
           </div>
+          {data.fundingSources.length === 0 ? <p className="text-secondary">No funding sources available.</p> :
+            <Row xs={1} md={3} className="g-3">
+              {data.fundingSources.map((source) => <Col key={source.id}>
+                <Card className="h-100 border-0 shadow-sm">
+                  <Card.Body className="p-3 p-md-4 d-flex gap-3 align-items-center">
+                    <span className="dashboard-account-icon bg-success-subtle text-success rounded-3 d-inline-flex align-items-center justify-content-center flex-shrink-0">
+                      <i className="bi bi-wallet2 fs-4" aria-hidden="true" />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <h3 className="h6 text-break mb-1">{source.name}</h3>
+                      <p className={`fs-4 fw-semibold text-break mb-0${source.balance < 0 ? " text-danger" : ""}`}>{money.format(source.balance)}</p>
+                      <span className="small text-secondary">Current balance</span>
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Col>)}
+            </Row>}
         </section>
       </Container>
     </div>
