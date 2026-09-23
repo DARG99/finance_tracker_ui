@@ -2,6 +2,7 @@ import { RouterProvider, createBrowserRouter, Outlet } from "react-router-dom";
 import Signup from "./signup/Signup";
 import Login from "./login/Login";
 import Dashboard from "./dashboard/Dashboard";
+import GuestOnly from "./auth/GuestOnly";
 import RequireAuth from "./auth/RequireAuth";
 import AddTransaction from "./transactions/AddTransaction";
 import AuthenticatedLayout from "./auth/AuthenticatedLayout";
@@ -18,8 +19,13 @@ const router = createBrowserRouter([
   {
     element: <Layout />,
     children: [
-      { path: "/", element: <Signup /> },
-      { path: "/login", element: <Login /> },
+      {
+        element: <GuestOnly />,
+        children: [
+          { path: "/", element: <Signup /> },
+          { path: "/login", element: <Login /> },
+        ],
+      },
       {
         element: <RequireAuth />,
         children: [

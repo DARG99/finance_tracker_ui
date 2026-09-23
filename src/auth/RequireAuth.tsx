@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { authService } from "../services/authService";
+import { useSession } from "./useSession";
 
 export default function RequireAuth() {
-  return authService.isAuthenticated() ? <Outlet /> : <Navigate to="/login" replace />;
+  return useSession() ? <Outlet /> : <Navigate to="/login" replace />;
 }

@@ -1,32 +1,32 @@
-# React + TypeScript + Vite
+# Finance Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+## PWA and iPhone login
 
-Currently, two official plugins are available:
+Build with `npm run build` and deploy `dist` using the provided nginx configuration.
+Serve the public site over HTTPS (TLS can terminate at your reverse proxy); service
+workers require a secure context. The worker is enabled only in production builds.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+On iPhone, open the site in Safari, choose Share → Add to Home Screen, and open it
+from the new Finance icon. You may need to log in once in the installed app because
+Safari and the Home Screen app can have separate storage.
 
-## React Compiler
+The access token stays in local storage across app restarts. Opening `/` or `/login`
+with a saved, unexpired session redirects to `/dashboard`. Session checks also run
+when returning from the background. JWT expiry is checked locally; the API remains
+authoritative and a 401 clears the matching session. Network errors do not log you
+out. Opaque tokens are checked by the API. This frontend has no refresh-token API:
+expired tokens require a new login. Browser-cleared storage also requires login.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The service worker provides an offline screen. Financial data and API responses
+are never cached; viewing or changing finances requires an internet connection.
 
-## Expanding the Oxlint configuration
+## Verification
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+- `npm run build`
+- `npm run lint`
+- `npm test`
+- On HTTPS or localhost, check the manifest and service worker in browser devtools.
+- Log in, reopen `/login` and `/`, and verify both redirect to the dashboard.
+- Background and reopen Safari and the installed app; verify the saved session.
+- Check expired tokens and API 401 responses return to login; network failures
+  should keep the token. Test airplane mode after the worker has installed.

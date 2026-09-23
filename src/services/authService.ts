@@ -3,21 +3,21 @@ import { loginResponseSchema } from "../schemas/authSchema";
 import { loginSchema, type LoginFormData } from "../schemas/loginSchema";
 import { signupSchema, type SignupFormData } from "../schemas/signupSchema";
 
-const TOKEN_KEY = "accessToken";
+import { hasSession, setToken } from "../auth/session";
 
 export const authService = {
   async login(data: LoginFormData): Promise<void> {
     const response = await api.post<unknown>("/auth/login", loginSchema.parse(data));
     const { token } = loginResponseSchema.parse(response.data);
-    localStorage.setItem(TOKEN_KEY, token);
+    setToken(token);
   },
   async signup(data: SignupFormData): Promise<void> {
     await api.post("/auth/signup", signupSchema.parse(data));
   },
   isAuthenticated(): boolean {
-    return Boolean(localStorage.getItem(TOKEN_KEY)?.trim());
+    return hasSession();
   },
   logout(): void {
-    localStorage.removeItem(TOKEN_KEY);
+    setToken(null);
   },
 };
