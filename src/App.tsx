@@ -8,6 +8,7 @@ import AddTransaction from "./transactions/AddTransaction";
 import AuthenticatedLayout from "./auth/AuthenticatedLayout";
 import Transactions from "./transactions/Transactions";
 import Profile from "./profile/Profile";
+import Admin from "./admin/Admin";
 
 const Layout = () => (
   <div className="App">
@@ -34,6 +35,7 @@ const router = createBrowserRouter([
             children: [
               { path: "/dashboard", element: <Dashboard /> },
               { path: "/profile", element: <Profile /> },
+              { path: "/admin", element: <Admin /> },
               { path: "/transactions", element: <Transactions /> },
               { path: "/transactions/new", element: <AddTransaction /> },
             ],

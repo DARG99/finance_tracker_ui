@@ -28,6 +28,13 @@ export default function AuthenticatedLayout() {
             <span className="small d-none d-sm-inline">Add transaction</span>
             <span className="visually-hidden d-sm-none">Add transaction</span>
           </NavLink>
+          <NavLink to="/admin" className={({ isActive }) =>
+            `btn flex-fill d-flex align-items-center justify-content-center gap-2 py-2 ${isActive ? "btn-success" : "btn-light text-secondary"}`
+          }>
+            <i className="bi bi-shield-lock fs-4 lh-1" aria-hidden="true" />
+            <span className="small d-none d-sm-inline">Admin</span>
+            <span className="visually-hidden d-sm-none">Admin</span>
+          </NavLink>
         </Container>
       </footer>
     </div>
