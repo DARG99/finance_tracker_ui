@@ -1,6 +1,6 @@
 /* Fill the space above the navigation without clipping taller content. */
 .transaction-page > main {
-  min-height: calc(100dvh - 3.5rem - env(safe-area-inset-bottom, 0px));
+  min-height: calc(100dvh - 4.5rem - 1px - env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
 }

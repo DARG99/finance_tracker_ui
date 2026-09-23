@@ -3,10 +3,10 @@ import { NavLink, Outlet } from "react-router-dom";
 
 export default function AuthenticatedLayout() {
   return (
-    <div className="bg-light min-vh-100" style={{ paddingBottom: "calc(3.5rem + env(safe-area-inset-bottom, 0px))" }}>
+    <div className="bg-light min-vh-100" style={{ paddingBottom: "calc(4.5rem + 1px + env(safe-area-inset-bottom, 0px))" }}>
       <Outlet />
-      <footer className="fixed-bottom bg-white border-top shadow-sm" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-        <Container as="nav" aria-label="Main navigation" className="d-flex gap-2 py-1 px-3" style={{ maxWidth: "540px" }}>
+      <footer className="fixed-bottom bg-white border-top shadow-sm" style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom, 0px))" }}>
+        <Container as="nav" aria-label="Main navigation" className="d-flex gap-2 py-2 px-3" style={{ maxWidth: "540px", height: "4rem" }}>
           <NavLink to="/dashboard" end className={({ isActive }) =>
             `btn flex-fill d-flex align-items-center justify-content-center gap-2 py-2 ${isActive ? "btn-success" : "btn-light text-secondary"}`
           }>
