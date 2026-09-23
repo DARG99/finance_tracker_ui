@@ -6,6 +6,7 @@ import RequireAuth from "./auth/RequireAuth";
 import AddTransaction from "./transactions/AddTransaction";
 import AuthenticatedLayout from "./auth/AuthenticatedLayout";
 import Transactions from "./transactions/Transactions";
+import Profile from "./profile/Profile";
 
 const Layout = () => (
   <div className="App">
@@ -26,6 +27,7 @@ const router = createBrowserRouter([
             element: <AuthenticatedLayout />,
             children: [
               { path: "/dashboard", element: <Dashboard /> },
+              { path: "/profile", element: <Profile /> },
               { path: "/transactions", element: <Transactions /> },
               { path: "/transactions/new", element: <AddTransaction /> },
             ],

@@ -79,7 +79,7 @@ export default function Transactions() {
       <Row className="justify-content-center"><Col xs={12} lg={9} xl={8}>
         <h1 className="h3 mb-3">Transactions</h1>
         {notice && <Alert variant="success" role="status" dismissible onClose={() => setNotice(null)}>{notice}</Alert>}
-        {loading && <p role="status"><Spinner size="sm" className="me-2" aria-hidden="true" />Loading transactions…</p>}
+        {loading && <p role="status"><Spinner as="span" size="sm" className="me-2" aria-hidden="true" />Loading transactions…</p>}
         {error && <Alert variant="danger" role="alert">{error} <Button variant="outline-danger" size="sm" onClick={() => reload()}>Retry</Button></Alert>}
         {!loading && !error && data && <>
           {data.content.length === 0 ? <div className="text-center py-5">

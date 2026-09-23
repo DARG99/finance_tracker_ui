@@ -180,7 +180,7 @@ export default function AddTransaction() {
                       <Form.Control as="textarea" rows={2} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="What was this transaction for?" />
                     </Form.Group>}
                     <Button type="submit" variant={selectedType.color} className="transaction-submit w-100 py-3 mt-2" disabled={!canSubmit}>
-                      {saving && <Spinner size="sm" className="me-2" aria-hidden="true" />}
+                      {saving && <Spinner as="span" size="sm" className="me-2" aria-hidden="true" />}
                       {saving ? "Saving…" : `Add ${selectedType.label.toLowerCase()}`}
                     </Button>
                   </fieldset>

@@ -86,7 +86,7 @@ export default function Signup() {
             </Form.Control.Feedback>
           </Form.Group>
           <Button type="submit" variant="success" size="lg" className="w-100 mt-2 fs-6 py-3" disabled={isSubmitting}>
-            {isSubmitting && <Spinner size="sm" className="me-2" aria-hidden="true" />}
+            {isSubmitting && <Spinner as="span" size="sm" className="me-2" aria-hidden="true" />}
             {isSubmitting ? "Creating account..." : "Create account"}
           </Button>
         </fieldset>

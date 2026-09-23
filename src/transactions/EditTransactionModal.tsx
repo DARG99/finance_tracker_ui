@@ -80,7 +80,7 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
       </Modal.Header>
       <Modal.Body>
         <p className="small text-secondary">Type: <strong>{type}</strong> · Cannot be changed</p>
-        {loading && <p role="status"><Spinner size="sm" className="me-2" aria-hidden="true" />Loading options…</p>}
+        {loading && <p role="status"><Spinner as="span" size="sm" className="me-2" aria-hidden="true" />Loading options…</p>}
         {loadError && <p className="text-danger small" role="alert"><i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />{loadError}</p>}
         {error && <Alert variant="danger" role="alert">{error}</Alert>}
         <Form id="edit-transaction-form" onSubmit={save} aria-busy={saving}>

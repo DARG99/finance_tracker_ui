@@ -1,30 +1,25 @@
-import { useNavigate } from "react-router-dom";
-import { Badge, Button, Card, Col, Container, Navbar, Row } from "react-bootstrap";
+import { useEffect, useState, type SubmitEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Alert, Badge, Button, Card, Col, Container, Form, Navbar, Row, Spinner } from "react-bootstrap";
 import { authService } from "../services/authService";
-import { mockDashboardData, type DashboardData } from "./dashboardData";
+import type { DashboardData } from "./dashboardData";
+import { dashboardService } from "../services/dashboardService";
+import { getApiErrorMessage } from "../api/errors";
 import "./Dashboard.css";
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const categoryColors = ["#198754", "#526ac7", "#b36b12", "#8b5bb5", "#16808a"];
 
-// Currency is presentation configuration; the response contains numeric amounts.
-export default function Dashboard({ data = mockDashboardData, currency = "EUR", isMock = true }: {
-  data?: DashboardData;
-  currency?: string;
-  isMock?: boolean;
-}) {
+export default function Dashboard() {
   const navigate = useNavigate();
-  const money = new Intl.NumberFormat(undefined, { style: "currency", currency });
-  const compactMoney = new Intl.NumberFormat(undefined, { style: "currency", currency, notation: "compact", maximumFractionDigits: 1 });
-  const monthly = [...data.monthlySpending].sort((a, b) => a.month - b.month);
-  const monthlyMax = Math.max(1, ...monthly.map((item) => item.amount));
-  const categoryMax = Math.max(1, ...data.spendingByCategory.map((item) => item.amount));
-  const summary = [
-    { label: "Income", amount: data.allTimeIncome, hint: "All time", tone: "success", icon: "arrow-down-left" },
-    { label: "Expenses", amount: data.allTimeExpense, hint: "All time", tone: "danger", icon: "arrow-up-right" },
-    { label: "Cash flow", amount: data.cashFlow, hint: "Income minus expenses", tone: data.cashFlow < 0 ? "danger" : "primary", icon: "arrow-left-right" },
-    { label: "Current money", amount: data.currentTrackedMoney, hint: "Tracked account balances", tone: data.currentTrackedMoney < 0 ? "danger" : "success", icon: "wallet2" },
-  ];
+  const [year, setYear] = useState(() => new Date().getFullYear());
+  const [yearInput, setYearInput] = useState(String(year));
+
+  function changeYear(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const value = Number(yearInput);
+    if (event.currentTarget.checkValidity() && Number.isInteger(value) && value >= 1 && value <= 9999) setYear(value);
+  }
 
   function signOut() {
     authService.logout();
@@ -36,7 +31,12 @@ export default function Dashboard({ data = mockDashboardData, currency = "EUR", 
       <Navbar as="header" className="bg-white border-bottom py-3">
         <Container className="gap-2 px-3 px-sm-4">
           <Navbar.Brand as="span" className="fw-bold m-0 text-wrap">Finance Tracker</Navbar.Brand>
-          <Button variant="outline-secondary" className="py-2 px-3 flex-shrink-0" onClick={signOut}>Sign out</Button>
+          <div className="d-flex align-items-center gap-2">
+            <Link to="/profile" className="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center" style={{ minWidth: 44, minHeight: 44 }} aria-label="Profile" title="Profile">
+              <i className="bi bi-person-circle fs-5" aria-hidden="true" />
+            </Link>
+            <Button variant="outline-secondary" className="py-2 px-3 flex-shrink-0" onClick={signOut}>Sign out</Button>
+          </div>
         </Container>
       </Navbar>
       <Container as="main" className="px-3 px-sm-4 py-4 py-md-5">
@@ -45,11 +45,58 @@ export default function Dashboard({ data = mockDashboardData, currency = "EUR", 
             <h1 className="h3 mb-1">Dashboard</h1>
             <p className="text-secondary mb-0">Your money at a glance.</p>
           </div>
-          {isMock && <Badge bg="warning" text="dark" className="px-3 py-2">Preview · Sample data</Badge>}
+          <Form onSubmit={changeYear} className="d-flex align-items-end gap-2">
+            <Form.Group controlId="dashboard-year">
+              <Form.Label className="small mb-1">Spending year</Form.Label>
+              <Form.Control type="number" min="1" max="9999" step="1" required value={yearInput} onChange={(event) => setYearInput(event.target.value)} style={{ width: "7rem" }} />
+            </Form.Group>
+            <Button type="submit" variant="outline-success" disabled={Number(yearInput) === year}>Apply</Button>
+          </Form>
         </header>
 
+        <DashboardReport key={year} year={year} />
+      </Container>
+    </div>
+  );
+}
+
+function DashboardReport({ year }: { year: number }) {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    dashboardService.getOverview(year, controller.signal)
+      .then((result) => { if (!controller.signal.aborted) setData(result); })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) setError(getApiErrorMessage(error, "Unable to load your dashboard. Please try again."));
+      });
+    return () => controller.abort();
+  }, [year, attempt]);
+
+  if (error) return <Alert variant="danger" role="alert">
+    {error} <Button variant="outline-danger" size="sm" onClick={() => { setError(null); setAttempt((value) => value + 1); }}>Retry</Button>
+  </Alert>;
+  if (!data) return <p role="status"><Spinner as="span" size="sm" className="me-2" aria-hidden="true" />Loading dashboard…</p>;
+  return <DashboardOverview data={data} year={year} />;
+}
+
+function DashboardOverview({ data, year, currency = "EUR" }: { data: DashboardData; year: number; currency?: string }) {
+  const money = new Intl.NumberFormat(undefined, { style: "currency", currency });
+  const compactMoney = new Intl.NumberFormat(undefined, { style: "currency", currency, notation: "compact", maximumFractionDigits: 1 });
+  const monthly = [...data.monthlySpending].sort((a, b) => a.month - b.month);
+  const monthlyMax = Math.max(1, ...monthly.map((item) => item.amount));
+  const categoryMax = Math.max(1, ...data.spendingByCategory.map((item) => item.amount));
+  const summary = [
+    { label: "Income", amount: data.allTimeIncome, hint: "All time", tone: "success", icon: "arrow-down-left" },
+    { label: "Expenses", amount: data.allTimeExpense, hint: "All time", tone: "danger", icon: "arrow-up-right" },
+    { label: "Current money", amount: data.currentTrackedMoney, hint: "Tracked account balances", tone: data.currentTrackedMoney < 0 ? "danger" : "success", icon: "wallet2" },
+  ];
+
+  return <>
         <section aria-label="Financial summary">
-          <Row xs={2} lg={4} className="g-3">
+          <Row xs={1} sm={3} className="g-3">
             {summary.map((item) => <Col key={item.label}>
               <Card className="h-100 border-0 shadow-sm">
                 <Card.Body className="p-3 p-md-4">
@@ -70,7 +117,7 @@ export default function Dashboard({ data = mockDashboardData, currency = "EUR", 
             <Card as="section" className="h-100 border-0 shadow-sm" aria-labelledby="monthly-title">
               <Card.Body className="p-3 p-md-4">
                 <h2 id="monthly-title" className="h5 mb-1">Monthly spending</h2>
-                <p className="small text-secondary mb-4">Expenses by month</p>
+                <p className="small text-secondary mb-4">Expenses by month · {year}</p>
                 {monthly.length === 0 ? <p className="text-secondary py-5 text-center">No monthly spending available.</p> : <>
                   <div className="dashboard-chart d-flex gap-2" aria-hidden="true">
                     <div className="dashboard-axis small text-secondary">
@@ -103,7 +150,7 @@ export default function Dashboard({ data = mockDashboardData, currency = "EUR", 
             <Card as="section" className="h-100 border-0 shadow-sm" aria-labelledby="category-title">
               <Card.Body className="p-3 p-md-4">
                 <h2 id="category-title" className="h5 mb-1">Spending by category</h2>
-                <p className="small text-secondary mb-4">Spending breakdown</p>
+                <p className="small text-secondary mb-4">Spending breakdown · {year}</p>
                 {data.spendingByCategory.length === 0 ? <p className="text-secondary py-5 text-center">No category spending available.</p> :
                   <ul className="list-unstyled d-grid gap-4 mb-0">
                     {data.spendingByCategory.map((item, index) => <li key={item.categoryId}>
@@ -144,7 +191,5 @@ export default function Dashboard({ data = mockDashboardData, currency = "EUR", 
               </Col>)}
             </Row>}
         </section>
-      </Container>
-    </div>
-  );
+  </>;
 }
