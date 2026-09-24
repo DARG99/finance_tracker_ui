@@ -13,7 +13,7 @@ export type TransactionType = "EXPENSE" | "INCOME" | "TRANSFER";
 type CommonTransaction = { amount: number; transactionDate: string };
 export type NewTransaction = CommonTransaction & (
   | { type: "EXPENSE"; sourceFundingSourceId: number; categoryId: number; description?: string }
-  | { type: "INCOME"; destinationFundingSourceId: number }
+  | { type: "INCOME"; destinationFundingSourceId: number; description?: string }
   | { type: "TRANSFER"; sourceFundingSourceId: number; destinationFundingSourceId: number; description?: string }
 );
 

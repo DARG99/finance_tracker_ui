@@ -1,3 +1,4 @@
+import { displayDate, parseDate } from "./dates";
 import { useEffect, useState, type SubmitEvent } from "react";
 import { Alert, Button, Col, Form, Modal, Row, Spinner } from "react-bootstrap";
 import { getApiErrorMessage } from "../api/errors";
@@ -10,7 +11,7 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
   onSaved: () => void;
 }) {
   const [amount, setAmount] = useState(String(transaction.amount));
-  const [date, setDate] = useState(transaction.transactionDate ?? "");
+  const [date, setDate] = useState(displayDate(transaction.transactionDate ?? ""));
   const [source, setSource] = useState(String(transaction.sourceFundingSourceId ?? ""));
   const [destination, setDestination] = useState(String(transaction.destinationFundingSourceId ?? ""));
   const [category, setCategory] = useState(String(transaction.categoryId ?? ""));
@@ -43,12 +44,12 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
   const hasSource = funding.some((option) => String(option.id) === source);
   const hasDestination = funding.some((option) => String(option.id) === destination);
   const hasChanges = Number(amount) !== transaction.amount
-    || date !== (transaction.transactionDate ?? "")
+    || parseDate(date) !== (transaction.transactionDate ?? "")
     || description.trim() !== (transaction.description ?? "").trim()
     || (type !== "INCOME" && source !== String(transaction.sourceFundingSourceId ?? ""))
     || (type !== "EXPENSE" && destination !== String(transaction.destinationFundingSourceId ?? ""))
     || (type === "EXPENSE" && category !== String(transaction.categoryId ?? ""));
-  const valid = Number.isFinite(Number(amount)) && Number(amount) > 0 && date !== ""
+  const valid = Number.isFinite(Number(amount)) && Number(amount) > 0 && parseDate(date) !== null
     && (type === "INCOME" ? hasDestination : hasSource)
     && (type !== "EXPENSE" || categories.some((option) => String(option.id) === category))
     && (type !== "TRANSFER" || (hasDestination && source !== destination));
@@ -57,7 +58,7 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
     event.preventDefault();
     if (!hasChanges || !valid || saving || loading || loadError || !event.currentTarget.checkValidity()) return;
     const update: TransactionUpdate = {
-      amount: Number(amount), transactionDate: date, description: description.trim(),
+      amount: Number(amount), transactionDate: parseDate(date)!, description: description.trim(),
       ...(type !== "INCOME" ? { sourceFundingSourceId: Number(source) } : {}),
       ...(type !== "EXPENSE" ? { destinationFundingSourceId: Number(destination) } : {}),
       ...(type === "EXPENSE" ? { categoryId: Number(category) } : {}),
@@ -91,8 +92,8 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
                 <Form.Control type="number" inputMode="decimal" min="0.01" step="0.01" required value={amount} onChange={(event) => setAmount(event.target.value)} />
               </Form.Group></Col>
               <Col xs={6}><Form.Group controlId="edit-date">
-                <Form.Label>Date</Form.Label>
-                <Form.Control type="date" required value={date} onChange={(event) => setDate(event.target.value)} />
+                <Form.Label>Date (dd/mm/yyyy)</Form.Label>
+                <Form.Control type="text" placeholder="dd/mm/yyyy" maxLength={10} required value={date} isInvalid={date.length > 0 && parseDate(date) === null} onChange={(event) => setDate(event.target.value)} />
               </Form.Group></Col>
             </Row>
             <Row className="g-3 mb-3">

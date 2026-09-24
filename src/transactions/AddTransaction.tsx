@@ -1,3 +1,4 @@
+import { displayDate, parseDate } from "./dates";
 import { useEffect, useState, type SubmitEvent } from "react";
 import { Alert, Button, Card, Col, Container, Form, Row, Spinner } from "react-bootstrap";
 import "./AddTransaction.css";
@@ -12,7 +13,7 @@ const transactionTypes = [
 
 function today() {
   const date = new Date();
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return displayDate(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`);
 }
 
 function useOptions(loader: (signal?: AbortSignal) => Promise<TransactionOption[]>) {
@@ -54,7 +55,7 @@ export default function AddTransaction() {
   const hasSource = funding.options.some((option) => String(option.id) === source);
   const hasDestination = funding.options.some((option) => String(option.id) === destination);
   const hasCategory = categories.options.some((option) => String(option.id) === category);
-  const hasRequiredFields = Number.isFinite(Number(amount)) && Number(amount) > 0 && date !== ""
+  const hasRequiredFields = Number.isFinite(Number(amount)) && Number(amount) > 0 && parseDate(date) !== null
     && (type === "EXPENSE"
       ? hasSource && hasCategory
       : type === "INCOME"
@@ -75,12 +76,12 @@ export default function AddTransaction() {
       setError("Choose different funding sources for the transfer.");
       return;
     }
-    const common = { amount: Number(amount), transactionDate: date };
+    const common = { amount: Number(amount), transactionDate: parseDate(date)! };
     const optionalDescription = description.trim() || undefined;
     const transaction: NewTransaction = type === "EXPENSE"
       ? { ...common, type, sourceFundingSourceId: Number(source), categoryId: Number(category), description: optionalDescription }
       : type === "INCOME"
-        ? { ...common, type, destinationFundingSourceId: Number(destination) }
+        ? { ...common, type, destinationFundingSourceId: Number(destination), description: optionalDescription }
         : { ...common, type, sourceFundingSourceId: Number(source), destinationFundingSourceId: Number(destination), description: optionalDescription };
     setSaving(true);
     try {
@@ -132,8 +133,8 @@ export default function AddTransaction() {
                       </Col>
                       <Col xs={6}>
                         <Form.Group controlId="transaction-date">
-                          <Form.Label>Date</Form.Label>
-                          <Form.Control className="py-3" type="date" required value={date} onChange={(event) => setDate(event.target.value)} />
+                          <Form.Label>Date (dd/mm/yyyy)</Form.Label>
+                          <Form.Control className="py-3" type="text" placeholder="dd/mm/yyyy" maxLength={10} required value={date} isInvalid={date.length > 0 && parseDate(date) === null} onChange={(event) => setDate(event.target.value)} />
                         </Form.Group>
                       </Col>
                     </Row>
@@ -175,10 +176,10 @@ export default function AddTransaction() {
                         {!categories.loading && !categories.error && categories.options.length === 0 && <p className="small text-secondary mt-1 mb-0">Add a category before recording an expense.</p>}
                       </div>
                     </Form.Group>}
-                    {type !== "INCOME" && <Form.Group controlId="transaction-description" className="mb-4">
+                    <Form.Group controlId="transaction-description" className="mb-4">
                       <Form.Label>Description <span className="text-secondary">(optional)</span></Form.Label>
                       <Form.Control as="textarea" rows={2} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="What was this transaction for?" />
-                    </Form.Group>}
+                    </Form.Group>
                     <Button type="submit" variant={selectedType.color} className="transaction-submit w-100 py-3 mt-2" disabled={!canSubmit}>
                       {saving && <Spinner as="span" size="sm" className="me-2" aria-hidden="true" />}
                       {saving ? "Saving…" : `Add ${selectedType.label.toLowerCase()}`}

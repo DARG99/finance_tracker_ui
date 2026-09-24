@@ -1,3 +1,4 @@
+import { displayDate } from "./dates";
 import { useEffect, useState } from "react";
 import { Alert, Button, Card, Col, Container, Modal, Row, Spinner } from "react-bootstrap";
 import { Link } from "react-router-dom";
@@ -16,9 +17,7 @@ function title(transaction: Transaction) {
 
 function dateLabel(value: string | null | undefined) {
   if (!value) return "No date";
-  // Parse as a local calendar date so time zones cannot shift the day.
-  const date = new Date(`${value}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
+  return displayDate(value);
 }
 
 export default function Transactions() {
