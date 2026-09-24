@@ -9,6 +9,7 @@ import AuthenticatedLayout from "./auth/AuthenticatedLayout";
 import Transactions from "./transactions/Transactions";
 import Profile from "./profile/Profile";
 import Admin from "./admin/Admin";
+import Subscriptions from "./subscriptions/Subscriptions";
 
 const Layout = () => (
   <div className="App">
@@ -37,6 +38,7 @@ const router = createBrowserRouter([
               { path: "/profile", element: <Profile /> },
               { path: "/admin", element: <Admin /> },
               { path: "/transactions", element: <Transactions /> },
+              { path: "/subscriptions", element: <Subscriptions /> },
               { path: "/transactions/new", element: <AddTransaction /> },
             ],
           },
