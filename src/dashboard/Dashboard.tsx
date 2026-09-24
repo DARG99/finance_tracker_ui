@@ -6,6 +6,7 @@ import type { DashboardData } from "./dashboardData";
 import { dashboardService } from "../services/dashboardService";
 import { getApiErrorMessage } from "../api/errors";
 import "./Dashboard.css";
+import { monthTransactionsUrl } from "../transactions/dates";
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const categoryColors = ["#198754", "#526ac7", "#b36b12", "#8b5bb5", "#16808a"];
@@ -117,21 +118,21 @@ function DashboardOverview({ data, year, currency = "EUR" }: { data: DashboardDa
             <Card as="section" className="h-100 border-0 shadow-sm" aria-labelledby="monthly-title">
               <Card.Body className="p-3 p-md-4">
                 <h2 id="monthly-title" className="h5 mb-1">Monthly spending</h2>
-                <p className="small text-secondary mb-4">Expenses by month · {year}</p>
+                <p className="small text-secondary mb-4">Expenses by month · {year}. Select a bar to view all transactions that month.</p>
                 {monthly.length === 0 ? <p className="text-secondary py-5 text-center">No monthly spending available.</p> : <>
-                  <div className="dashboard-chart d-flex gap-2" aria-hidden="true">
+                  <div className="dashboard-chart d-flex gap-2">
                     <div className="dashboard-axis small text-secondary">
                       <span>{compactMoney.format(monthlyMax)}</span>
                       <span>{compactMoney.format(monthlyMax / 2)}</span>
                       <span>{money.format(0)}</span>
                     </div>
                     <div className="dashboard-plot" style={{ gridTemplateColumns: `repeat(${monthly.length}, minmax(0, 1fr))` }}>
-                      {monthly.map((item) => <div className="dashboard-month" key={item.month} title={`${months[item.month - 1]}: ${money.format(item.amount)}`}>
+                      {monthly.map((item) => <Link className="dashboard-month" key={item.month} to={monthTransactionsUrl(year, item.month)} aria-label={`View all transactions for ${months[item.month - 1]} ${year}. Spending: ${money.format(item.amount)}`} title={`View transactions for ${months[item.month - 1]} ${year}`}>
                         <div className="dashboard-bar-space">
                           <div className="dashboard-month-bar" style={{ height: `${item.amount / monthlyMax * 100}%` }} />
                         </div>
                         <span className="small text-secondary mt-2">{months[item.month - 1]}</span>
-                      </div>)}
+                      </Link>)}
                     </div>
                   </div>
                   <details className="small mt-3">

@@ -10,6 +10,14 @@ const optionsSchema = z.array(z.object({
 export type TransactionOption = z.infer<typeof optionsSchema>[number];
 export type TransactionType = "EXPENSE" | "INCOME" | "TRANSFER";
 
+export type TransactionFilters = {
+  type?: TransactionType;
+  categoryId?: number;
+  search?: string;
+  from?: string;
+  to?: string;
+};
+
 type CommonTransaction = { amount: number; transactionDate: string };
 export type NewTransaction = CommonTransaction & (
   | { type: "EXPENSE"; sourceFundingSourceId: number; categoryId: number; description?: string }
@@ -19,8 +27,15 @@ export type NewTransaction = CommonTransaction & (
 
 // Paths are relative to the API base URL (which already includes /api).
 export const transactionService = {
-  async list(page = 0, signal?: AbortSignal) {
-    const response = await api.get("/transactions", { params: { page, size: 20 }, signal });
+  async list(page = 0, signal?: AbortSignal, filters: TransactionFilters = {}) {
+    const response = await api.get("/transactions", { params: {
+      page, size: 20,
+      type: filters.type || undefined,
+      categoryId: filters.categoryId,
+      search: filters.search?.trim() || undefined,
+      from: filters.from || undefined,
+      to: filters.to || undefined,
+    }, signal });
     return transactionPageSchema.parse(response.data);
   },
   async update(id: number, transaction: TransactionUpdate) {

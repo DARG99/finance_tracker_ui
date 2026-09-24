@@ -133,8 +133,8 @@ export default function AddTransaction() {
                       </Col>
                       <Col xs={6}>
                         <Form.Group controlId="transaction-date">
-                          <Form.Label>Date (dd/mm/yyyy)</Form.Label>
-                          <Form.Control className="py-3" type="text" placeholder="dd/mm/yyyy" maxLength={10} required value={date} isInvalid={date.length > 0 && parseDate(date) === null} onChange={(event) => setDate(event.target.value)} />
+                          <Form.Label>Date</Form.Label>
+                          <Form.Control className="py-3" type="date" min="0001-01-01" max="9999-12-31" required value={parseDate(date) ?? ""} onChange={(event) => setDate(displayDate(event.target.value))} />
                         </Form.Group>
                       </Col>
                     </Row>

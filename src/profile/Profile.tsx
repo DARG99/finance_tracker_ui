@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import { Alert, Button, Card, Col, Container, Form, Row, Spinner } from "react-bootstrap";
 import { profileService } from "../services/profileService";
 import { getApiErrorMessage } from "../api/errors";
+import ManageOptions from "./ManageOptions";
 
-function CreateForm({ kind }: { kind: "funding-source" | "category" }) {
+function CreateForm({ kind, onCreated }: { kind: "funding-source" | "category"; onCreated?: () => void }) {
   const isFundingSource = kind === "funding-source";
   const label = isFundingSource ? "funding source" : "category";
   const [name, setName] = useState("");
@@ -28,6 +29,7 @@ function CreateForm({ kind }: { kind: "funding-source" | "category" }) {
       } else {
         await profileService.addCategory(trimmedName);
       }
+      onCreated?.();
       setSuccess(`${trimmedName} added successfully.`);
       setName("");
       setInitialBalance("");
@@ -73,6 +75,8 @@ function CreateForm({ kind }: { kind: "funding-source" | "category" }) {
 }
 
 export default function Profile() {
+  const [fundingVersion, setFundingVersion] = useState(0);
+  const [categoryVersion, setCategoryVersion] = useState(0);
   return (
     <Container as="main" className="px-3 px-sm-4 py-4 py-md-5">
       <header className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
@@ -86,9 +90,11 @@ export default function Profile() {
         </Link>
       </header>
       <Row className="g-3 g-md-4">
-        <Col xs={12} md={6}><CreateForm kind="funding-source" /></Col>
-        <Col xs={12} md={6}><CreateForm kind="category" /></Col>
+        <Col xs={12} md={6}><CreateForm kind="funding-source" onCreated={() => setFundingVersion((value) => value + 1)} /></Col>
+        <Col xs={12} md={6}><CreateForm kind="category" onCreated={() => setCategoryVersion((value) => value + 1)} /></Col>
       </Row>
+      <ManageOptions key={`funding-${fundingVersion}`} kind="funding-source" />
+      <ManageOptions key={`category-${categoryVersion}`} kind="category" />
     </Container>
   );
 }

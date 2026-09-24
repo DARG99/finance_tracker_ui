@@ -17,13 +17,16 @@ export const transactionSchema = z.object({
 
 export const transactionPageSchema = z.object({
   content: z.array(transactionSchema),
-  page: z.number().int().nonnegative(),
+  page: z.number().int().nonnegative().optional(),
+  number: z.number().int().nonnegative().optional(),
   size: z.number().int().positive(),
   totalElements: z.number().int().nonnegative(),
   totalPages: z.number().int().nonnegative(),
   first: z.boolean(),
   last: z.boolean(),
-});
+}).refine((value) => value.page !== undefined || value.number !== undefined, {
+  message: "Missing page number",
+}).transform((value) => ({ ...value, page: value.page ?? value.number! }));
 
 export type Transaction = z.infer<typeof transactionSchema>;
 export type TransactionPage = z.infer<typeof transactionPageSchema>;
