@@ -1,4 +1,5 @@
 import { useState, type SubmitEvent } from "react";
+import { Link } from "react-router-dom";
 import { Alert, Button, Card, Col, Container, Form, Row, Spinner } from "react-bootstrap";
 import { profileService } from "../services/profileService";
 import { getApiErrorMessage } from "../api/errors";
@@ -74,9 +75,15 @@ function CreateForm({ kind }: { kind: "funding-source" | "category" }) {
 export default function Profile() {
   return (
     <Container as="main" className="px-3 px-sm-4 py-4 py-md-5">
-      <header className="mb-4">
-        <h1 className="h3"><i className="bi bi-person-circle me-2" aria-hidden="true" />Profile</h1>
-        <p className="text-secondary mb-0">Set up your funding sources and expense categories.</p>
+      <header className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+          <h1 className="h3"><i className="bi bi-person-circle me-2" aria-hidden="true" />Profile</h1>
+          <p className="text-secondary mb-0">Set up your funding sources and expense categories.</p>
+        </div>
+        <Link to="/admin" className="btn btn-outline-secondary d-inline-flex align-items-center gap-2 py-2">
+          <i className="bi bi-shield-lock" aria-hidden="true" />
+          Admin
+        </Link>
       </header>
       <Row className="g-3 g-md-4">
         <Col xs={12} md={6}><CreateForm kind="funding-source" /></Col>

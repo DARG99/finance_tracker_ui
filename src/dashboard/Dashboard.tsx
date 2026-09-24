@@ -96,16 +96,16 @@ function DashboardOverview({ data, year, currency = "EUR" }: { data: DashboardDa
 
   return <>
         <section aria-label="Financial summary">
-          <Row xs={1} sm={3} className="g-3">
+          <Row xs={3} className="g-2 g-sm-3 dashboard-summary">
             {summary.map((item) => <Col key={item.label}>
               <Card className="h-100 border-0 shadow-sm">
-                <Card.Body className="p-3 p-md-4">
-                  <div className="d-flex align-items-center gap-2 mb-3">
+                <Card.Body className="dashboard-summary-body">
+                  <div className="dashboard-summary-heading">
                     <i className={`bi bi-${item.icon} text-${item.tone}`} aria-hidden="true" />
-                    <h2 className="fs-6 mb-0">{item.label}</h2>
+                    <h2 className="dashboard-summary-label mb-0">{item.label}</h2>
                   </div>
                   <p className={`dashboard-total fw-semibold text-${item.tone} mb-2`}>{money.format(item.amount)}</p>
-                  <p className="small text-secondary mb-0">{item.hint}</p>
+                  <p className="dashboard-summary-hint text-secondary mb-0">{item.hint}</p>
                 </Card.Body>
               </Card>
             </Col>)}
