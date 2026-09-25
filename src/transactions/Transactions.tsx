@@ -9,7 +9,7 @@ import EditTransactionModal from "./EditTransactionModal";
 
 const labels = { EXPENSE: "Expense", INCOME: "Income", TRANSFER: "Transfer" };
 const colors = { EXPENSE: "danger", INCOME: "success", TRANSFER: "warning" };
-const amountFormat = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const amountFormat = new Intl.NumberFormat(undefined, { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function title(transaction: Transaction) {
   return transaction.categoryName || labels[transaction.type];

@@ -31,7 +31,11 @@ export const subscriptionService = {
     const response = await api.patch(`/subscriptions/${id}`, value);
     return subscriptionSchema.parse(response.data);
   },
-  async deactivate(id: number): Promise<void> {
+  async deactivate(id: number): Promise<Subscription> {
+    const response = await api.patch(`/subscriptions/${id}/deactivate`);
+    return subscriptionSchema.parse(response.data);
+  },
+  async remove(id: number): Promise<void> {
     await api.delete(`/subscriptions/${id}`);
   },
 };
