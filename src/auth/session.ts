@@ -1,29 +1,38 @@
-export const TOKEN_KEY = "accessToken";
+export const SESSION_KEY = "finance-session-v2";
 const SESSION_EVENT = "session-change";
 
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY)?.trim() || null;
-}
+export type Session = {
+  token: string;
+  expiresAt: number;
+  refreshToken: string;
+  refreshExpiresAt: number;
+};
 
-// JWT claims are an expiry hint only; the API still verifies the token.
-// Opaque tokens (or JWTs without exp) are validated by the API.
-export function hasSession(): boolean {
-  const token = getToken();
-  if (!token) return false;
-  if (token.split(".").length !== 3) return true;
+export function getSession(): Session | null {
   try {
-    const payload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-    const claims = JSON.parse(atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, "=")));
-    if (!claims || typeof claims !== "object") return false;
-    return claims.exp === undefined || (typeof claims.exp === "number" && claims.exp * 1000 > Date.now());
+    const value = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
+    return value && typeof value.token === "string" && typeof value.refreshToken === "string"
+      && value.refreshToken && Number.isFinite(value.expiresAt) && Number.isFinite(value.refreshExpiresAt)
+      ? value : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
-export function setToken(token: string | null): void {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+export function getToken(): string | null {
+  return getSession()?.token || null;
+}
+
+export function hasSession(): boolean {
+  const session = getSession();
+  return Boolean(session && session.refreshExpiresAt > Date.now());
+}
+
+export function setSession(session: Session | null): void {
+  // One storage write publishes both rotated credentials atomically to other tabs.
+  if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  else localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem("accessToken");
   window.dispatchEvent(new Event(SESSION_EVENT));
 }
 

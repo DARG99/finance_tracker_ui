@@ -15,6 +15,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [yearInput, setYearInput] = useState(String(year));
+  const [signingOut, setSigningOut] = useState(false);
 
   function changeYear(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -22,9 +23,15 @@ export default function Dashboard() {
     if (event.currentTarget.checkValidity() && Number.isInteger(value) && value >= 1 && value <= 9999) setYear(value);
   }
 
-  function signOut() {
-    authService.logout();
-    navigate("/login", { replace: true });
+  async function signOut() {
+    setSigningOut(true);
+    try {
+      await authService.logout();
+    } catch {
+      // Local credentials are cleared even if revocation could not reach the server.
+    } finally {
+      navigate("/login", { replace: true });
+    }
   }
 
   return (
@@ -36,7 +43,7 @@ export default function Dashboard() {
             <Link to="/profile" className="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center" style={{ minWidth: 44, minHeight: 44 }} aria-label="Profile" title="Profile">
               <i className="bi bi-person-circle fs-5" aria-hidden="true" />
             </Link>
-            <Button variant="outline-secondary" className="py-2 px-3 flex-shrink-0" onClick={signOut}>Sign out</Button>
+            <Button variant="outline-secondary" className="py-2 px-3 flex-shrink-0" disabled={signingOut} onClick={signOut}>{signingOut ? "Signing out…" : "Sign out"}</Button>
           </div>
         </Container>
       </Navbar>
