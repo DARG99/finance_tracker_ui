@@ -9,7 +9,7 @@ import ExpensePicker from "./ExpensePicker";
 export default function EditTransactionModal({ transaction, onClose, onSaved }: {
   transaction: Transaction;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (transaction: Transaction) => void;
 }) {
   const [amount, setAmount] = useState(String(transaction.amount));
   const [date, setDate] = useState(displayDate(transaction.transactionDate ?? ""));
@@ -74,8 +74,8 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
     setSaving(true);
     setError(null);
     try {
-      await transactionService.update(transaction.id, update);
-      onSaved();
+      const updated = await transactionService.update(transaction.id, update);
+      onSaved(updated);
     } catch (error: unknown) {
       setError(getApiErrorMessage(error, "Unable to save changes. Please try again."));
       setSaving(false);

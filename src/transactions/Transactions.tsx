@@ -145,7 +145,6 @@ function TransactionsList({ search }: { search: string }) {
         content: current.content.map((item) => item.id === updated.id ? updated : item),
       } : current);
       setNotice("Marked as reimbursement. You can edit the transaction to link an expense.");
-      reload(page, true);
     } catch (error: unknown) {
       setError(getApiErrorMessage(error, "Unable to mark the transaction as a reimbursement. Please try again."));
     } finally {
@@ -159,10 +158,15 @@ function TransactionsList({ search }: { search: string }) {
     setDeleteError(null);
     try {
       await transactionService.remove(deleting.id);
+      const deletedId = deleting.id;
       setOriginalTransactionId(null);
       setDeleting(null);
+      setData((current) => current ? {
+        ...current,
+        content: current.content.filter((item) => item.id !== deletedId),
+        totalElements: Math.max(0, current.totalElements - 1),
+      } : current);
       setNotice("Transaction deleted.");
-      reload(data?.content.length === 1 && page > 0 ? page - 1 : page);
     } catch (error: unknown) {
       setDeleteError(getApiErrorMessage(error, "Unable to delete the transaction. Please try again."));
     } finally {
@@ -335,10 +339,13 @@ function TransactionsList({ search }: { search: string }) {
           </>}
         </>}
       </Col></Row>
-      {editing && <EditTransactionModal key={editing.id} transaction={editing} onClose={() => setEditing(null)} onSaved={() => {
+      {editing && <EditTransactionModal key={editing.id} transaction={editing} onClose={() => setEditing(null)} onSaved={(updated) => {
+        setData((current) => current ? {
+          ...current,
+          content: current.content.map((item) => item.id === updated.id ? updated : item),
+        } : current);
         setEditing(null);
         setNotice("Transaction updated.");
-        reload();
       }} />}
       <Modal show={Boolean(deleting)} onHide={() => { if (!busy) setDeleting(null); }} centered backdrop={busy ? "static" : true} keyboard={!busy} aria-labelledby="delete-transaction-title">
         <Modal.Header closeButton={!busy}><Modal.Title id="delete-transaction-title" className="h5">Delete transaction?</Modal.Title></Modal.Header>
