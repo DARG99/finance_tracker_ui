@@ -2,6 +2,7 @@ import { displayDate, parseDate } from "./dates";
 import { useEffect, useState, type SubmitEvent } from "react";
 import { Alert, Button, Card, Col, Container, Form, Row, Spinner } from "react-bootstrap";
 import "./AddTransaction.css";
+import ExpensePicker from "./ExpensePicker";
 import { getApiErrorMessage } from "../api/errors";
 import { transactionService, type NewTransaction, type TransactionOption, type TransactionType } from "../services/transactionService";
 
@@ -37,6 +38,8 @@ function useOptions(loader: (signal?: AbortSignal) => Promise<TransactionOption[
 
 export default function AddTransaction() {
   const [type, setType] = useState<TransactionType>("EXPENSE");
+  const [reimbursement, setReimbursement] = useState(false);
+  const [originalExpense, setOriginalExpense] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(today);
   const [source, setSource] = useState("");
@@ -59,7 +62,7 @@ export default function AddTransaction() {
     && (type === "EXPENSE"
       ? hasSource && hasCategory
       : type === "INCOME"
-        ? hasDestination
+        ? hasDestination && (!reimbursement || originalExpense !== null)
         : hasSource && hasDestination && source !== destination);
   const canSubmit = !saving && !unavailable && hasRequiredFields;
 
@@ -81,12 +84,15 @@ export default function AddTransaction() {
     const transaction: NewTransaction = type === "EXPENSE"
       ? { ...common, type, sourceFundingSourceId: Number(source), categoryId: Number(category), description: optionalDescription }
       : type === "INCOME"
-        ? { ...common, type, destinationFundingSourceId: Number(destination), description: optionalDescription }
+        ? { ...common, type, destinationFundingSourceId: Number(destination), description: optionalDescription,
+          ...(reimbursement ? { transactionNature: "REIMBURSEMENT" as const, reimbursementForTransactionId: originalExpense! } : { transactionNature: "NORMAL" as const }) }
         : { ...common, type, sourceFundingSourceId: Number(source), destinationFundingSourceId: Number(destination), description: optionalDescription };
     setSaving(true);
     try {
       await transactionService.create(transaction);
-      setSuccess(`${selectedType.label} added successfully.`);
+      setSuccess(`${type === "INCOME" && reimbursement ? "Reimbursement" : selectedType.label} added successfully.`);
+      setReimbursement(false);
+      setOriginalExpense(null);
       setAmount("");
       setDate(today());
       setSource("");
@@ -114,7 +120,7 @@ export default function AddTransaction() {
                     <Button key={option.value} variant={type === option.value ? option.color : `outline-${option.color}`}
                       className={`flex-fill py-3 px-1${option.value === "TRANSFER" && type !== "TRANSFER" ? " text-dark" : ""}`}
                       aria-pressed={type === option.value} disabled={saving}
-                      onClick={() => { setType(option.value); setError(null); setSuccess(null); }}>
+                      onClick={() => { setType(option.value); setReimbursement(false); setOriginalExpense(null); setError(null); setSuccess(null); }}>
                       {option.label}
                     </Button>
                   ))}
@@ -176,13 +182,20 @@ export default function AddTransaction() {
                         {!categories.loading && !categories.error && categories.options.length === 0 && <p className="small text-secondary mt-1 mb-0">Add a category before recording an expense.</p>}
                       </div>
                     </Form.Group>}
+                    {type === "INCOME" && <>
+                      <Form.Check id="transaction-reimbursement" type="switch" className="mb-2" label="This is a reimbursement" checked={reimbursement} onChange={(event) => { setReimbursement(event.target.checked); setOriginalExpense(null); }} />
+                      {reimbursement && <>
+                        <p className="small text-secondary">Money returned for an expense. It increases your balance without counting as earned income.</p>
+                        <ExpensePicker value={originalExpense} onChange={setOriginalExpense} disabled={saving} />
+                      </>}
+                    </>}
                     <Form.Group controlId="transaction-description" className="mb-4">
                       <Form.Label>Description <span className="text-secondary">(optional)</span></Form.Label>
                       <Form.Control as="textarea" rows={2} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="What was this transaction for?" />
                     </Form.Group>
                     <Button type="submit" variant={selectedType.color} className="transaction-submit w-100 py-3 mt-2" disabled={!canSubmit}>
                       {saving && <Spinner as="span" size="sm" className="me-2" aria-hidden="true" />}
-                      {saving ? "Saving…" : `Add ${selectedType.label.toLowerCase()}`}
+                      {saving ? "Saving…" : `Add ${type === "INCOME" && reimbursement ? "reimbursement" : selectedType.label.toLowerCase()}`}
                     </Button>
                   </fieldset>
                 </Form>

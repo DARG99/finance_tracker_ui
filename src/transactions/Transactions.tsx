@@ -4,15 +4,16 @@ import { Alert, Button, Card, Col, Container, Form, Modal, Row, Spinner } from "
 import { Link, useLocation } from "react-router-dom";
 import { getApiErrorMessage } from "../api/errors";
 import type { Transaction, TransactionPage } from "../schemas/transactionSchema";
-import { type TransactionFilters, type TransactionOption, type TransactionType, transactionService } from "../services/transactionService";
+import { type TransactionNature, type TransactionFilters, type TransactionOption, type TransactionType, transactionService } from "../services/transactionService";
 import EditTransactionModal from "./EditTransactionModal";
+import ReimbursementLabel from "./ReimbursementLabel";
 
 const labels = { EXPENSE: "Expense", INCOME: "Income", TRANSFER: "Transfer" };
 const colors = { EXPENSE: "danger", INCOME: "success", TRANSFER: "warning" };
 const amountFormat = new Intl.NumberFormat(undefined, { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function title(transaction: Transaction) {
-  return transaction.categoryName || labels[transaction.type];
+  return transaction.transactionNature === "REIMBURSEMENT" ? "Reimbursement" : transaction.categoryName || labels[transaction.type];
 }
 
 function dateLabel(value: string | null | undefined) {
@@ -28,12 +29,17 @@ export default function Transactions() {
 function TransactionsList({ search }: { search: string }) {
   const [page, setPage] = useState(0);
   const [filters, setFilters] = useState<TransactionFilters>(() => dateFiltersFromSearch(search));
+  const [originalTransactionId, setOriginalTransactionId] = useState<number | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [description, setDescription] = useState("");
   const [categories, setCategories] = useState<TransactionOption[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [categoriesVersion, setCategoriesVersion] = useState(0);
+  const [fundingSources, setFundingSources] = useState<TransactionOption[]>([]);
+  const [fundingSourcesLoading, setFundingSourcesLoading] = useState(true);
+  const [fundingSourcesError, setFundingSourcesError] = useState<string | null>(null);
+  const [fundingSourcesVersion, setFundingSourcesVersion] = useState(0);
   const [version, setVersion] = useState(0);
   const [data, setData] = useState<TransactionPage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,10 +70,27 @@ function TransactionsList({ search }: { search: string }) {
   }, [categoriesVersion]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    transactionService.getFundingSources(controller.signal).then((result) => {
+      if (!controller.signal.aborted) setFundingSources(result);
+    }).catch((error: unknown) => {
+      if (!controller.signal.aborted) setFundingSourcesError(getApiErrorMessage(error, "Unable to load funding sources."));
+    }).finally(() => {
+      if (!controller.signal.aborted) setFundingSourcesLoading(false);
+    });
+    return () => controller.abort();
+  }, [fundingSourcesVersion]);
+
+  useEffect(() => {
     // Cancel the previous request immediately, but wait for description typing to settle.
     if (description !== (filters.search ?? "")) return;
     const controller = new AbortController();
-    transactionService.list(page, controller.signal, filters).then((result) => {
+    const request = originalTransactionId
+      ? transactionService.getById(originalTransactionId, controller.signal).then((transaction): TransactionPage => ({
+          content: [transaction], page: 0, size: 1, totalElements: 1, totalPages: 1, first: true, last: true,
+        }))
+      : transactionService.list(page, controller.signal, filters);
+    request.then((result) => {
       if (controller.signal.aborted) return;
       if (page > 0 && result.content.length === 0) {
         setPage(Math.max(0, Math.min(page - 1, result.totalPages - 1)));
@@ -81,16 +104,26 @@ function TransactionsList({ search }: { search: string }) {
       setLoading(false);
     });
     return () => controller.abort();
-  }, [page, version, filters, description]);
+  }, [page, version, filters, description, originalTransactionId]);
 
   function changeFilters(update: Partial<TransactionFilters>) {
+    setOriginalTransactionId(null);
     setFilters((current) => ({ ...current, ...update }));
     setPage(0);
     setLoading(true);
     setError(null);
   }
 
-  const hasFilters = Boolean(filters.type || filters.categoryId || description.trim() || filters.from || filters.to);
+  const hasFilters = Boolean(originalTransactionId || filters.transactionNature || filters.type || filters.categoryId || filters.fundingSourceId || description.trim() || filters.from || filters.to);
+
+  function showOriginalTransaction(id: number) {
+    setDescription("");
+    setFilters({});
+    setOriginalTransactionId(id);
+    setPage(0);
+    setLoading(true);
+    setError(null);
+  }
 
   function reload(targetPage = page) {
     setLoading(true);
@@ -105,6 +138,7 @@ function TransactionsList({ search }: { search: string }) {
     setDeleteError(null);
     try {
       await transactionService.remove(deleting.id);
+      setOriginalTransactionId(null);
       setDeleting(null);
       setNotice("Transaction deleted.");
       reload(data?.content.length === 1 && page > 0 ? page - 1 : page);
@@ -129,7 +163,9 @@ function TransactionsList({ search }: { search: string }) {
               {(filters.from || filters.to) && <span className="small text-secondary">
                 {filters.from ? displayDate(filters.from) : "Any date"} – {filters.to ? displayDate(filters.to) : "Any date"}
               </span>}
+              {originalTransactionId && <span className="badge text-bg-info">Original transaction #{originalTransactionId}</span>}
               {hasFilters && <Button variant="link" size="sm" onClick={() => {
+                setOriginalTransactionId(null);
                 setDescription("");
                 setFilters({});
                 setPage(0);
@@ -160,9 +196,30 @@ function TransactionsList({ search }: { search: string }) {
                 </Form.Group>
               </Col>
               <Col xs={12}>
+                <Form.Group controlId="transaction-funding-source">
+                  <Form.Label>Funding source</Form.Label>
+                  <Form.Select disabled={fundingSourcesLoading || Boolean(fundingSourcesError)} value={filters.fundingSourceId ?? ""} onChange={(event) => changeFilters({ fundingSourceId: event.target.value ? Number(event.target.value) : undefined })}>
+                    <option value="">{fundingSourcesLoading ? "Loading funding sources…" : "All funding sources"}</option>
+                    {fundingSources.map((source) => <option key={source.id} value={source.id}>{source.name}</option>)}
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+              <Col xs={12}>
+                <Form.Group controlId="transaction-nature">
+                  <Form.Label>Reimbursements</Form.Label>
+                  <Form.Select value={filters.transactionNature ?? ""} onChange={(event) => changeFilters({ transactionNature: (event.target.value || undefined) as TransactionNature | undefined })}>
+                    <option value="">All transactions</option>
+                    <option value="REIMBURSEMENT">Reimbursements only</option>
+                    <option value="NORMAL">Exclude reimbursements</option>
+                  </Form.Select>
+                  <Form.Text>For earned income only, choose Income and Exclude reimbursements.</Form.Text>
+                </Form.Group>
+              </Col>
+              <Col xs={12}>
                 <Form.Group controlId="transaction-description">
                   <Form.Label>Description</Form.Label>
                   <Form.Control type="search" placeholder="Search descriptions" value={description} onChange={(event) => {
+                    setOriginalTransactionId(null);
                     setDescription(event.target.value);
                     setPage(0);
                     setLoading(true);
@@ -184,6 +241,7 @@ function TransactionsList({ search }: { search: string }) {
               </Col>
             </Row>
             {categoriesError && <Alert variant="danger" className="mt-3 mb-0">{categoriesError} <Button variant="outline-danger" size="sm" onClick={() => { setCategoriesLoading(true); setCategoriesError(null); setCategoriesVersion((value) => value + 1); }}>Retry categories</Button></Alert>}
+            {fundingSourcesError && <Alert variant="danger" className="mt-3 mb-0">{fundingSourcesError} <Button variant="outline-danger" size="sm" onClick={() => { setFundingSourcesLoading(true); setFundingSourcesError(null); setFundingSourcesVersion((value) => value + 1); }}>Retry funding sources</Button></Alert>}
             </div>
           </Card.Body>
         </Card>
@@ -205,10 +263,11 @@ function TransactionsList({ search }: { search: string }) {
                     <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
                       <h2 id={`transaction-${transaction.id}`} className="h6 mb-0 text-break">{title(transaction)}</h2>
                       <span className={`fw-bold text-${colors[transaction.type]}`}>
-                        <span className="visually-hidden">{labels[transaction.type]} amount: </span>
+                        <span className="visually-hidden">{transaction.transactionNature === "REIMBURSEMENT" ? "Reimbursement" : labels[transaction.type]} amount: </span>
                         {amountFormat.format(transaction.amount)}
                       </span>
                     </div>
+                    {transaction.transactionNature === "REIMBURSEMENT" && <ReimbursementLabel transaction={transaction} onShowOriginal={showOriginalTransaction} />}
                     {transaction.description && <p className="text-secondary text-break mt-2 mb-2" style={{ whiteSpace: "pre-wrap" }}>{transaction.description}</p>}
                     <p className="small text-secondary text-break mt-2 mb-1">
                       <i className="bi bi-wallet2 me-1" aria-hidden="true" />
@@ -217,7 +276,7 @@ function TransactionsList({ search }: { search: string }) {
                           : (transaction.sourceFundingSourceName || "Funding source unavailable")}
                     </p>
                     <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                      <span className="small text-secondary"><time dateTime={transaction.transactionDate || undefined}>{dateLabel(transaction.transactionDate)}</time> · {labels[transaction.type]}</span>
+                      <span className="small text-secondary"><time dateTime={transaction.transactionDate || undefined}>{dateLabel(transaction.transactionDate)}</time> · {transaction.transactionNature === "REIMBURSEMENT" ? "Reimbursement" : labels[transaction.type]}</span>
                       <div className="d-flex gap-2">
                         <Button variant="outline-secondary" style={{ minWidth: 44, minHeight: 44 }} aria-label={`Edit ${title(transaction)}`} onClick={() => setEditing(transaction)}>
                           <i className="bi bi-pencil-square" aria-hidden="true" />
