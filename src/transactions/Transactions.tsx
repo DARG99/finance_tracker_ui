@@ -126,8 +126,8 @@ function TransactionsList({ search }: { search: string }) {
     setError(null);
   }
 
-  function reload(targetPage = page) {
-    setLoading(true);
+  function reload(targetPage = page, background = false) {
+    if (!background) setLoading(true);
     setError(null);
     setPage(targetPage);
     setVersion((value) => value + 1);
@@ -137,10 +137,15 @@ function TransactionsList({ search }: { search: string }) {
     if (busy) return;
     setBusy(true);
     setNotice(null);
+    setError(null);
     try {
-      await transactionService.update(transaction.id, { transactionNature: "REIMBURSEMENT" });
+      const updated = await transactionService.update(transaction.id, { transactionNature: "REIMBURSEMENT" });
+      setData((current) => current ? {
+        ...current,
+        content: current.content.map((item) => item.id === updated.id ? updated : item),
+      } : current);
       setNotice("Marked as reimbursement. You can edit the transaction to link an expense.");
-      reload();
+      reload(page, true);
     } catch (error: unknown) {
       setError(getApiErrorMessage(error, "Unable to mark the transaction as a reimbursement. Please try again."));
     } finally {
@@ -276,8 +281,8 @@ function TransactionsList({ search }: { search: string }) {
         </Card>
         {notice && <Alert variant="success" role="status" dismissible onClose={() => setNotice(null)}>{notice}</Alert>}
         {loading && <p role="status"><Spinner as="span" size="sm" className="me-2" aria-hidden="true" />Loading transactions…</p>}
-        {error && <Alert variant="danger" role="alert">{error} <Button variant="outline-danger" size="sm" onClick={() => reload()}>Retry</Button></Alert>}
-        {!loading && !error && data && <>
+        {error && <Alert variant="danger" role="alert">{error} <Button variant="outline-danger" size="sm" onClick={() => reload(page, Boolean(data))}>Retry</Button></Alert>}
+        {!loading && data && <>
           {data.content.length === 0 ? <div className="text-center py-5">
             <i className="bi bi-list-ul display-5 text-secondary" aria-hidden="true" />
             <h2 className="h5 mt-3">{hasFilters ? "No matching transactions" : "No transactions yet"}</h2>
