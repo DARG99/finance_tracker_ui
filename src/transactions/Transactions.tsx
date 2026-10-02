@@ -28,6 +28,7 @@ export default function Transactions() {
 
 function TransactionsList({ search }: { search: string }) {
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
   const [filters, setFilters] = useState<TransactionFilters>(() => dateFiltersFromSearch(search));
   const [originalTransactionId, setOriginalTransactionId] = useState<number | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -89,7 +90,7 @@ function TransactionsList({ search }: { search: string }) {
       ? transactionService.getById(originalTransactionId, controller.signal).then((transaction): TransactionPage => ({
           content: [transaction], page: 0, size: 1, totalElements: 1, totalPages: 1, first: true, last: true,
         }))
-      : transactionService.list(page, controller.signal, filters);
+      : transactionService.list(page, controller.signal, filters, pageSize);
     request.then((result) => {
       if (controller.signal.aborted) return;
       if (page > 0 && result.content.length === 0) {
@@ -104,7 +105,7 @@ function TransactionsList({ search }: { search: string }) {
       setLoading(false);
     });
     return () => controller.abort();
-  }, [page, version, filters, description, originalTransactionId]);
+  }, [page, pageSize, version, filters, description, originalTransactionId]);
 
   function changeFilters(update: Partial<TransactionFilters>) {
     setOriginalTransactionId(null);
@@ -130,6 +131,21 @@ function TransactionsList({ search }: { search: string }) {
     setError(null);
     setPage(targetPage);
     setVersion((value) => value + 1);
+  }
+
+  async function markAsReimbursement(transaction: Transaction) {
+    if (busy) return;
+    setBusy(true);
+    setNotice(null);
+    try {
+      await transactionService.update(transaction.id, { transactionNature: "REIMBURSEMENT" });
+      setNotice("Marked as reimbursement. You can edit the transaction to link an expense.");
+      reload();
+    } catch (error: unknown) {
+      setError(getApiErrorMessage(error, "Unable to mark the transaction as a reimbursement. Please try again."));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function remove() {
@@ -172,6 +188,19 @@ function TransactionsList({ search }: { search: string }) {
                 setLoading(true);
                 setError(null);
               }}>Clear filters</Button>}
+              <Form.Group controlId="transactions-page-size" className="d-flex align-items-center gap-2 ms-auto">
+                <Form.Label className="mb-0 small">Transactions per page</Form.Label>
+                <Form.Select size="sm" className="w-auto" value={pageSize} disabled={Boolean(originalTransactionId)} onChange={(event) => {
+                  setPageSize(Number(event.target.value));
+                  setPage(0);
+                  setLoading(true);
+                  setError(null);
+                }}>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </Form.Select>
+              </Form.Group>
             </div>
             <div id="transaction-filters" hidden={!filtersOpen} className="mt-3">
             <Row className="g-3">
@@ -277,11 +306,14 @@ function TransactionsList({ search }: { search: string }) {
                     </p>
                     <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
                       <span className="small text-secondary"><time dateTime={transaction.transactionDate || undefined}>{dateLabel(transaction.transactionDate)}</time> · {transaction.transactionNature === "REIMBURSEMENT" ? "Reimbursement" : labels[transaction.type]}</span>
-                      <div className="d-flex gap-2">
-                        <Button variant="outline-secondary" style={{ minWidth: 44, minHeight: 44 }} aria-label={`Edit ${title(transaction)}`} onClick={() => setEditing(transaction)}>
+                      <div className="d-flex flex-wrap gap-2">
+                        {transaction.type === "INCOME" && transaction.transactionNature !== "REIMBURSEMENT" && <Button variant="outline-success" disabled={busy} onClick={() => markAsReimbursement(transaction)}>
+                          Mark as reimbursement
+                        </Button>}
+                        <Button variant="outline-secondary" disabled={busy} style={{ minWidth: 44, minHeight: 44 }} aria-label={`Edit ${title(transaction)}`} onClick={() => setEditing(transaction)}>
                           <i className="bi bi-pencil-square" aria-hidden="true" />
                         </Button>
-                        <Button variant="outline-danger" style={{ minWidth: 44, minHeight: 44 }} aria-label={`Delete ${title(transaction)}`} onClick={() => { setDeleting(transaction); setDeleteError(null); }}>
+                        <Button variant="outline-danger" disabled={busy} style={{ minWidth: 44, minHeight: 44 }} aria-label={`Delete ${title(transaction)}`} onClick={() => { setDeleting(transaction); setDeleteError(null); }}>
                           <i className="bi bi-trash" aria-hidden="true" />
                         </Button>
                       </div>
@@ -291,9 +323,9 @@ function TransactionsList({ search }: { search: string }) {
               </li>)}
             </ul>
             <nav aria-label="Transaction pages" className="d-flex align-items-center justify-content-between gap-2 mt-4">
-              <Button variant="outline-secondary" disabled={data.first} onClick={() => reload(page - 1)}>Previous</Button>
+              <Button variant="outline-secondary" disabled={data.first} onClick={() => reload(data.page - 1)}>Previous</Button>
               <span className="small">Page {data.page + 1} of {data.totalPages}</span>
-              <Button variant="outline-secondary" disabled={data.last} onClick={() => reload(page + 1)}>Next</Button>
+              <Button variant="outline-secondary" disabled={data.last} onClick={() => reload(data.page + 1)}>Next</Button>
             </nav>
           </>}
         </>}

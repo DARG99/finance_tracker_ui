@@ -57,7 +57,6 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
   const valid = Number.isFinite(Number(amount)) && Number(amount) > 0 && parseDate(date) !== null
     && (type === "INCOME" ? hasDestination : hasSource)
     && (type !== "EXPENSE" || categories.some((option) => String(option.id) === category))
-    && (type !== "INCOME" || !reimbursement || originalExpense !== null)
     && (type !== "TRANSFER" || (hasDestination && source !== destination));
 
   async function save(event: SubmitEvent<HTMLFormElement>) {
@@ -69,7 +68,7 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
       ...(type !== "EXPENSE" ? { destinationFundingSourceId: Number(destination) } : {}),
       ...(type === "EXPENSE" ? { categoryId: Number(category) } : {}),
       ...(type === "INCOME" ? reimbursement
-        ? { transactionNature: "REIMBURSEMENT" as const, reimbursementForTransactionId: originalExpense! }
+        ? { transactionNature: "REIMBURSEMENT" as const, ...(originalExpense !== (transaction.reimbursementForTransactionId ?? null) ? { reimbursementForTransactionId: originalExpense } : {}) }
         : { transactionNature: "NORMAL" as const } : {}),
     };
     setSaving(true);
@@ -132,9 +131,9 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
               </Form.Select>
             </Form.Group>}
             {type === "INCOME" && <>
-              <Form.Check id="edit-reimbursement" type="switch" className="mb-2" label="This is a reimbursement" checked={reimbursement} onChange={(event) => { setReimbursement(event.target.checked); setError(null); }} />
+              <Form.Check id="edit-reimbursement" type="switch" className="mb-2" label="Mark as reimbursement" checked={reimbursement} onChange={(event) => { setReimbursement(event.target.checked); setError(null); }} />
               {reimbursement && <>
-                <p className="small text-secondary">Money returned for an expense. Choose the original expense this income reimburses.</p>
+                <p className="small text-secondary">Money returned for one or more expenses. You can optionally link an original expense. Changing this label does not change the payment amount or account balance.</p>
                 <ExpensePicker value={originalExpense} onChange={setOriginalExpense} disabled={saving}
                   selectedLabel={originalExpense === transaction.reimbursementForTransactionId
                     ? transaction.reimbursementForDescription || `Original expense #${originalExpense}` : undefined} />

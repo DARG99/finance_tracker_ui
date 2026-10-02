@@ -62,7 +62,7 @@ export default function AddTransaction() {
     && (type === "EXPENSE"
       ? hasSource && hasCategory
       : type === "INCOME"
-        ? hasDestination && (!reimbursement || originalExpense !== null)
+        ? hasDestination
         : hasSource && hasDestination && source !== destination);
   const canSubmit = !saving && !unavailable && hasRequiredFields;
 
@@ -85,7 +85,7 @@ export default function AddTransaction() {
       ? { ...common, type, sourceFundingSourceId: Number(source), categoryId: Number(category), description: optionalDescription }
       : type === "INCOME"
         ? { ...common, type, destinationFundingSourceId: Number(destination), description: optionalDescription,
-          ...(reimbursement ? { transactionNature: "REIMBURSEMENT" as const, reimbursementForTransactionId: originalExpense! } : { transactionNature: "NORMAL" as const }) }
+          ...(reimbursement ? { transactionNature: "REIMBURSEMENT" as const, reimbursementForTransactionId: originalExpense } : { transactionNature: "NORMAL" as const }) }
         : { ...common, type, sourceFundingSourceId: Number(source), destinationFundingSourceId: Number(destination), description: optionalDescription };
     setSaving(true);
     try {
@@ -185,7 +185,7 @@ export default function AddTransaction() {
                     {type === "INCOME" && <>
                       <Form.Check id="transaction-reimbursement" type="switch" className="mb-2" label="This is a reimbursement" checked={reimbursement} onChange={(event) => { setReimbursement(event.target.checked); setOriginalExpense(null); }} />
                       {reimbursement && <>
-                        <p className="small text-secondary">Money returned for an expense. It increases your balance without counting as earned income.</p>
+                        <p className="small text-secondary">Money returned for one or more expenses. It increases your balance without counting as earned income.</p>
                         <ExpensePicker value={originalExpense} onChange={setOriginalExpense} disabled={saving} />
                       </>}
                     </>}

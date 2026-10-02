@@ -26,9 +26,10 @@ export default function ReimbursementLabel({ transaction, onShowOriginal }: { tr
 
   return <p className="small text-secondary text-break mt-2 mb-1">
     <Badge bg="info" text="dark"><i className="bi bi-arrow-return-left me-1" aria-hidden="true" />Reimbursement</Badge>
-    {" for the "}
-    {id ? <Button variant="link" className="p-0 align-baseline fw-semibold text-decoration-underline" style={{ fontSize: "inherit" }} onClick={() => onShowOriginal(id)}>original transaction</Button> : "original transaction"}
+    {id ? <> for the{" "}
+    <Button variant="link" className="p-0 align-baseline fw-semibold text-decoration-underline" style={{ fontSize: "inherit" }} onClick={() => onShowOriginal(id)}>original transaction</Button>
     {description && ` “${description}”`}
     {date ? <> on <time dateTime={date}>{displayDate(date)}</time></> : " · Original transaction date unavailable"}
+    </> : " · No linked expense"}
   </p>;
 }

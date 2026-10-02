@@ -90,6 +90,7 @@
 }
 
 .dashboard-bar-space {
+  position: relative;
   flex: 1;
   width: 65%;
   max-width: 72px;
@@ -98,6 +99,7 @@
 }
 
 .dashboard-month-bar {
+  position: absolute;
   width: 100%;
   background: #198754;
   border-radius: 6px 6px 0 0;
@@ -124,10 +126,23 @@
 }
 
 .dashboard-month:hover .dashboard-month-bar {
+  position: absolute;
   background: #146c43;
 }
 
 .dashboard-month:focus-visible {
   outline: 3px solid #198754;
   outline-offset: 3px;
+}
+
+.dashboard-zero-line {
+  position: absolute;
+  width: 154%;
+  left: -27%;
+  border-top: 1px solid #6c757d;
+}
+
+.dashboard-month-bar-negative {
+  border-radius: 0 0 6px 6px;
+  background: #526ac7;
 }

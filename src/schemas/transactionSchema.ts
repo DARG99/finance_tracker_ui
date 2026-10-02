@@ -55,12 +55,12 @@ export type TransactionPage = z.infer<typeof transactionPageSchema>;
 
 // Deliberately excludes type: an existing transaction cannot change its type.
 export type TransactionUpdate = {
-  amount: number;
-  transactionDate: string;
-  description: string;
+  amount?: number;
+  transactionDate?: string;
+  description?: string;
   sourceFundingSourceId?: number;
   destinationFundingSourceId?: number;
   categoryId?: number;
   transactionNature?: "NORMAL" | "REIMBURSEMENT";
-  reimbursementForTransactionId?: number;
+  reimbursementForTransactionId?: number | null;
 };

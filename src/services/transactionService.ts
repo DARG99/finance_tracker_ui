@@ -26,16 +26,16 @@ export type NewTransaction = CommonTransaction & (
   | { type: "EXPENSE"; sourceFundingSourceId: number; categoryId: number; description?: string }
   | ({ type: "INCOME"; destinationFundingSourceId: number; description?: string } & (
       | { transactionNature?: "NORMAL"; reimbursementForTransactionId?: never }
-      | { transactionNature: "REIMBURSEMENT"; reimbursementForTransactionId: number }
+      | { transactionNature: "REIMBURSEMENT"; reimbursementForTransactionId?: number | null }
     ))
   | { type: "TRANSFER"; sourceFundingSourceId: number; destinationFundingSourceId: number; description?: string }
 );
 
 // Paths are relative to the API base URL (which already includes /api).
 export const transactionService = {
-  async list(page = 0, signal?: AbortSignal, filters: TransactionFilters = {}) {
+  async list(page = 0, signal?: AbortSignal, filters: TransactionFilters = {}, size = 50) {
     const response = await api.get("/transactions", { params: {
-      page, size: 20,
+      page, size,
       type: filters.type || undefined,
       transactionNature: filters.transactionNature || undefined,
       categoryId: filters.categoryId,

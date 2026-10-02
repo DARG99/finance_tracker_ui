@@ -12,7 +12,7 @@ export const dashboardSchema = z.object({
   })),
   monthlySpending: z.array(z.object({
     month: z.number().int().min(1).max(12),
-    amount: z.number().nonnegative(),
+    amount: z.number(),
   })),
   spendingByCategory: z.array(z.object({
     categoryId: z.number().int().positive(),

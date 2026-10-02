@@ -94,11 +94,14 @@ function DashboardOverview({ data, year, currency = "EUR" }: { data: DashboardDa
   const money = new Intl.NumberFormat(undefined, { style: "currency", currency });
   const compactMoney = new Intl.NumberFormat(undefined, { style: "currency", currency, notation: "compact", maximumFractionDigits: 1 });
   const monthly = [...data.monthlySpending].sort((a, b) => a.month - b.month);
-  const monthlyMax = Math.max(1, ...monthly.map((item) => item.amount));
+  const monthlyMin = Math.min(0, ...monthly.map((item) => item.amount));
+  const monthlyMax = Math.max(monthlyMin === 0 ? 1 : 0, ...monthly.map((item) => item.amount));
+  const monthlyRange = monthlyMax - monthlyMin;
+  const zeroPosition = monthlyMax / monthlyRange * 100;
   const categoryMax = Math.max(1, ...data.spendingByCategory.map((item) => item.amount));
   const summary = [
-    { label: "Income", amount: data.allTimeIncome, hint: "All time", tone: "success", icon: "arrow-down-left" },
-    { label: "Expenses", amount: data.allTimeExpense, hint: "All time", tone: "danger", icon: "arrow-up-right" },
+    { label: "Income", amount: data.allTimeIncome, hint: "All time · Excludes reimbursements", tone: "success", icon: "arrow-down-left" },
+    { label: "Net expenses", amount: data.allTimeExpense, hint: "All time · After reimbursements", tone: "danger", icon: "arrow-up-right" },
     { label: "Current money", amount: data.currentTrackedMoney, hint: "Tracked account balances", tone: data.currentTrackedMoney < 0 ? "danger" : "success", icon: "wallet2" },
   ];
 
@@ -125,18 +128,22 @@ function DashboardOverview({ data, year, currency = "EUR" }: { data: DashboardDa
             <Card as="section" className="h-100 border-0 shadow-sm" aria-labelledby="monthly-title">
               <Card.Body className="p-3 p-md-4">
                 <h2 id="monthly-title" className="h5 mb-1">Monthly spending</h2>
-                <p className="small text-secondary mb-4">Expenses by month · {year}. Select a bar to view all transactions that month.</p>
+                <p className="small text-secondary mb-4">Net expenses by month · {year}. Negative amounts mean reimbursements exceed expenses. Select a bar to view all transactions that month.</p>
                 {monthly.length === 0 ? <p className="text-secondary py-5 text-center">No monthly spending available.</p> : <>
                   <div className="dashboard-chart d-flex gap-2">
                     <div className="dashboard-axis small text-secondary">
                       <span>{compactMoney.format(monthlyMax)}</span>
-                      <span>{compactMoney.format(monthlyMax / 2)}</span>
-                      <span>{money.format(0)}</span>
+                      <span>{compactMoney.format((monthlyMax + monthlyMin) / 2)}</span>
+                      <span>{money.format(monthlyMin)}</span>
                     </div>
                     <div className="dashboard-plot" style={{ gridTemplateColumns: `repeat(${monthly.length}, minmax(0, 1fr))` }}>
                       {monthly.map((item) => <Link className="dashboard-month" key={item.month} to={monthTransactionsUrl(year, item.month)} aria-label={`View all transactions for ${months[item.month - 1]} ${year}. Spending: ${money.format(item.amount)}`} title={`View transactions for ${months[item.month - 1]} ${year}`}>
                         <div className="dashboard-bar-space">
-                          <div className="dashboard-month-bar" style={{ height: `${item.amount / monthlyMax * 100}%` }} />
+                          <div className="dashboard-zero-line" style={{ top: `${zeroPosition}%` }} />
+                          <div className={`dashboard-month-bar${item.amount < 0 ? " dashboard-month-bar-negative" : ""}`} style={{
+                            top: `${item.amount < 0 ? zeroPosition : zeroPosition - item.amount / monthlyRange * 100}%`,
+                            height: `${Math.abs(item.amount) / monthlyRange * 100}%`,
+                          }} />
                         </div>
                         <span className="small text-secondary mt-2">{months[item.month - 1]}</span>
                       </Link>)}
@@ -158,7 +165,7 @@ function DashboardOverview({ data, year, currency = "EUR" }: { data: DashboardDa
             <Card as="section" className="h-100 border-0 shadow-sm" aria-labelledby="category-title">
               <Card.Body className="p-3 p-md-4">
                 <h2 id="category-title" className="h5 mb-1">Spending by category</h2>
-                <p className="small text-secondary mb-4">Spending breakdown · {year}</p>
+                <p className="small text-secondary mb-4">Spending breakdown · {year}. Reimbursements without an expense link are not deducted from categories.</p>
                 {data.spendingByCategory.length === 0 ? <p className="text-secondary py-5 text-center">No category spending available.</p> :
                   <ul className="list-unstyled d-grid gap-4 mb-0">
                     {data.spendingByCategory.map((item, index) => <li key={item.categoryId}>
