@@ -100,8 +100,8 @@ function DashboardOverview({ data, year, currency = "EUR" }: { data: DashboardDa
   const zeroPosition = monthlyMax / monthlyRange * 100;
   const categoryMax = Math.max(1, ...data.spendingByCategory.map((item) => item.amount));
   const summary = [
-    { label: "Income", amount: data.allTimeIncome, hint: "All time · Excludes reimbursements", tone: "success", icon: "arrow-down-left" },
-    { label: "Net expenses", amount: data.allTimeExpense, hint: "All time · After reimbursements", tone: "danger", icon: "arrow-up-right" },
+    { label: "Income", amount: data.allTimeIncome, hint: "All time", tone: "success", icon: "arrow-down-left" },
+    { label: "Net expenses", amount: data.allTimeExpense, hint: "All time", tone: "danger", icon: "arrow-up-right" },
     { label: "Current money", amount: data.currentTrackedMoney, hint: "Tracked account balances", tone: data.currentTrackedMoney < 0 ? "danger" : "success", icon: "wallet2" },
   ];
 
@@ -127,8 +127,7 @@ function DashboardOverview({ data, year, currency = "EUR" }: { data: DashboardDa
           <Col xs={12} lg={7}>
             <Card as="section" className="h-100 border-0 shadow-sm" aria-labelledby="monthly-title">
               <Card.Body className="p-3 p-md-4">
-                <h2 id="monthly-title" className="h5 mb-1">Monthly spending</h2>
-                <p className="small text-secondary mb-4">Net expenses by month · {year}. Negative amounts mean reimbursements exceed expenses. Select a bar to view all transactions that month.</p>
+                <h2 id="monthly-title" className="h5 mb-4">Monthly spending · {year}</h2>
                 {monthly.length === 0 ? <p className="text-secondary py-5 text-center">No monthly spending available.</p> : <>
                   <div className="dashboard-chart d-flex gap-2">
                     <div className="dashboard-axis small text-secondary">
@@ -164,8 +163,7 @@ function DashboardOverview({ data, year, currency = "EUR" }: { data: DashboardDa
           <Col xs={12} lg={5}>
             <Card as="section" className="h-100 border-0 shadow-sm" aria-labelledby="category-title">
               <Card.Body className="p-3 p-md-4">
-                <h2 id="category-title" className="h5 mb-1">Spending by category</h2>
-                <p className="small text-secondary mb-4">Spending breakdown · {year}. Reimbursements without an expense link are not deducted from categories.</p>
+                <h2 id="category-title" className="h5 mb-4">Spending by category · {year}</h2>
                 {data.spendingByCategory.length === 0 ? <p className="text-secondary py-5 text-center">No category spending available.</p> :
                   <ul className="list-unstyled d-grid gap-4 mb-0">
                     {data.spendingByCategory.map((item, index) => <li key={item.categoryId}>
