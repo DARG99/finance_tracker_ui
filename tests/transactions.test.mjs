@@ -17,6 +17,7 @@ const springPage = { content: [], number: 0, size: 20, totalElements: 0, totalPa
 let request;
 let responseData = springPage;
 globalThis.__transactionTestApi = {
+  async patch(path, data) { request = { path, method: "PATCH", data }; return { data: responseData }; },
   async post(path, data) { request = { path, method: "POST", data }; },
   async delete(path) { request = { path, method: "DELETE" }; },
   async get(path, options) { request = { path, ...options }; return { data: responseData }; },
@@ -25,6 +26,27 @@ const serviceSource = compile('../src/services/transactionService.ts')
   .replace('import { api } from "../api/client";', 'const api = globalThis.__transactionTestApi;')
   .replace('from "../schemas/transactionSchema"', `from "${schemaUrl}"`);
 const { transactionService } = await import(moduleUrl(serviceSource));
+
+test('updates income reimbursement details and omits the expense link when converting back', async () => {
+  const common = { amount: 25, transactionDate: '2026-10-02', description: 'Dinner refund', destinationFundingSourceId: 1 };
+  const conversion = { ...common, transactionNature: 'REIMBURSEMENT', reimbursementForTransactionId: 42 };
+  responseData = { id: 43, type: 'INCOME', ...conversion };
+  try {
+    const updated = await transactionService.update(43, conversion);
+    assert.deepEqual(request, { path: '/transactions/43', method: 'PATCH', data: conversion });
+    assert.equal(updated.reimbursementForTransactionId, 42);
+    assert.equal(updated.transactionNature, 'REIMBURSEMENT');
+
+    const normal = { ...common, transactionNature: 'NORMAL' };
+    responseData = { id: 43, type: 'INCOME', ...normal, reimbursementForTransactionId: null };
+    const restored = await transactionService.update(43, normal);
+    assert.deepEqual(request, { path: '/transactions/43', method: 'PATCH', data: normal });
+    assert.equal(restored.transactionNature, 'NORMAL');
+    assert.equal(restored.reimbursementForTransactionId, null);
+  } finally {
+    responseData = springPage;
+  }
+});
 
 test('sends all transaction filters and preserves pagination and cancellation', async () => {
   const signal = new AbortController().signal;

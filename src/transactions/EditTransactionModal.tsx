@@ -4,6 +4,7 @@ import { Alert, Button, Col, Form, Modal, Row, Spinner } from "react-bootstrap";
 import { getApiErrorMessage } from "../api/errors";
 import type { Transaction, TransactionUpdate } from "../schemas/transactionSchema";
 import { transactionService, type TransactionOption } from "../services/transactionService";
+import ExpensePicker from "./ExpensePicker";
 
 export default function EditTransactionModal({ transaction, onClose, onSaved }: {
   transaction: Transaction;
@@ -16,6 +17,8 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
   const [destination, setDestination] = useState(String(transaction.destinationFundingSourceId ?? ""));
   const [category, setCategory] = useState(String(transaction.categoryId ?? ""));
   const [description, setDescription] = useState(transaction.description ?? "");
+  const [reimbursement, setReimbursement] = useState(transaction.transactionNature === "REIMBURSEMENT");
+  const [originalExpense, setOriginalExpense] = useState<number | null>(transaction.reimbursementForTransactionId ?? null);
   const [funding, setFunding] = useState<TransactionOption[]>([]);
   const [categories, setCategories] = useState<TransactionOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,10 +51,13 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
     || description.trim() !== (transaction.description ?? "").trim()
     || (type !== "INCOME" && source !== String(transaction.sourceFundingSourceId ?? ""))
     || (type !== "EXPENSE" && destination !== String(transaction.destinationFundingSourceId ?? ""))
-    || (type === "EXPENSE" && category !== String(transaction.categoryId ?? ""));
+    || (type === "EXPENSE" && category !== String(transaction.categoryId ?? ""))
+    || (type === "INCOME" && (reimbursement !== (transaction.transactionNature === "REIMBURSEMENT")
+      || (reimbursement && originalExpense !== (transaction.reimbursementForTransactionId ?? null))));
   const valid = Number.isFinite(Number(amount)) && Number(amount) > 0 && parseDate(date) !== null
     && (type === "INCOME" ? hasDestination : hasSource)
     && (type !== "EXPENSE" || categories.some((option) => String(option.id) === category))
+    && (type !== "INCOME" || !reimbursement || originalExpense !== null)
     && (type !== "TRANSFER" || (hasDestination && source !== destination));
 
   async function save(event: SubmitEvent<HTMLFormElement>) {
@@ -62,6 +68,9 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
       ...(type !== "INCOME" ? { sourceFundingSourceId: Number(source) } : {}),
       ...(type !== "EXPENSE" ? { destinationFundingSourceId: Number(destination) } : {}),
       ...(type === "EXPENSE" ? { categoryId: Number(category) } : {}),
+      ...(type === "INCOME" ? reimbursement
+        ? { transactionNature: "REIMBURSEMENT" as const, reimbursementForTransactionId: originalExpense! }
+        : { transactionNature: "NORMAL" as const } : {}),
     };
     setSaving(true);
     setError(null);
@@ -80,7 +89,7 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
         <Modal.Title id="edit-transaction-title" className="h5">Edit transaction</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <p className="small text-secondary">Type: <strong>{type}</strong> · Cannot be changed</p>
+        <p className="small text-secondary">Type: <strong>{type}</strong>{type === "INCOME" ? " · Can be marked as a reimbursement below" : " · Cannot be changed"}</p>
         {loading && <p role="status"><Spinner as="span" size="sm" className="me-2" aria-hidden="true" />Loading options…</p>}
         {loadError && <p className="text-danger small" role="alert"><i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />{loadError}</p>}
         {error && <Alert variant="danger" role="alert">{error}</Alert>}
@@ -122,6 +131,15 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
                 {categories.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}
               </Form.Select>
             </Form.Group>}
+            {type === "INCOME" && <>
+              <Form.Check id="edit-reimbursement" type="switch" className="mb-2" label="This is a reimbursement" checked={reimbursement} onChange={(event) => { setReimbursement(event.target.checked); setError(null); }} />
+              {reimbursement && <>
+                <p className="small text-secondary">Money returned for an expense. Choose the original expense this income reimburses.</p>
+                <ExpensePicker value={originalExpense} onChange={setOriginalExpense} disabled={saving}
+                  selectedLabel={originalExpense === transaction.reimbursementForTransactionId
+                    ? transaction.reimbursementForDescription || `Original expense #${originalExpense}` : undefined} />
+              </>}
+            </>}
             <Form.Group controlId="edit-description">
               <Form.Label>Description <span className="text-secondary">(optional)</span></Form.Label>
               <Form.Control as="textarea" rows={2} value={description} onChange={(event) => setDescription(event.target.value)} />

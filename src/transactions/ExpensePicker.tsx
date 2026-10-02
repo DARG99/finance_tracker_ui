@@ -16,10 +16,11 @@ function expenseLabel(expense: ReimbursableExpense) {
   ].filter(Boolean).join(" · ");
 }
 
-export default function ExpensePicker({ value, onChange, disabled = false }: {
+export default function ExpensePicker({ value, onChange, disabled = false, selectedLabel }: {
   value: number | null;
   onChange: (id: number) => void;
   disabled?: boolean;
+  selectedLabel?: string;
 }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -70,7 +71,7 @@ export default function ExpensePicker({ value, onChange, disabled = false }: {
     }} aria-describedby="reimbursement-expense-help">
       <option value="" disabled>Choose the expense being reimbursed</option>
       {value !== null && !expenses.some((expense) => expense.id === value) && <option value={value}>
-        {selected?.id === value ? expenseLabel(selected) : "Selected expense"}
+        {selected?.id === value ? expenseLabel(selected) : selectedLabel || "Selected expense"}
       </option>}
       {expenses.map((expense) => <option key={expense.id} value={expense.id}>{expenseLabel(expense)}</option>)}
     </Form.Select>

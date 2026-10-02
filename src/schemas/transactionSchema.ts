@@ -61,4 +61,6 @@ export type TransactionUpdate = {
   sourceFundingSourceId?: number;
   destinationFundingSourceId?: number;
   categoryId?: number;
+  transactionNature?: "NORMAL" | "REIMBURSEMENT";
+  reimbursementForTransactionId?: number;
 };
