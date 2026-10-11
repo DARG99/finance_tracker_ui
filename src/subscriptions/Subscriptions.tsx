@@ -83,7 +83,7 @@ export default function Subscriptions() {
         <h1 className="h3 mb-0">Subscriptions</h1>
         <Button variant="success" disabled={loading || Boolean(error)} onClick={() => setEditor({ subscription: null })}><i className="bi bi-plus-lg me-2" aria-hidden="true" />Add subscription</Button>
       </div>
-      <p className="text-secondary">Manage your recurring payments.</p>
+      <p className="text-secondary">Manage your recurring payments. Active subscriptions count toward your predicted balance. Deactivate a subscription to stop future payments and remove its upcoming costs from predictions.</p>
       {notice && <Alert variant="success" role="status" dismissible onClose={() => setNotice(null)}>{notice}</Alert>}
       {loading && <p role="status"><Spinner as="span" size="sm" className="me-2" aria-hidden="true" />Loading subscriptions…</p>}
       {error && <Alert variant="danger" role="alert">{error} <Button variant="outline-danger" size="sm" onClick={reload}>Retry</Button></Alert>}

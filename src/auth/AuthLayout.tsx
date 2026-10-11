@@ -3,7 +3,7 @@ import { Col, Container, Row } from "react-bootstrap";
 
 export default function AuthLayout({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <Container fluid className="min-vh-100 bg-light px-3 py-4 py-sm-5">
+    <Container fluid className="min-vh-100 bg-body-tertiary px-3 py-4 py-sm-5">
       <Row className="justify-content-center g-0">
         <Col as="main" xs={12} sm={9} md={7} lg={5} xl={4} xxl={3}>
           <header className="mb-4">

@@ -21,6 +21,32 @@ function dateLabel(value: string | null | undefined) {
   return displayDate(value);
 }
 
+function TransactionPagination({ data, onPageChange, top = false }: {
+  data: TransactionPage;
+  onPageChange: (page: number) => void;
+  top?: boolean;
+}) {
+  const lastPage = Math.max(0, data.totalPages - 1);
+  const atStart = data.first || data.page <= 0;
+  const atEnd = data.last || data.page >= lastPage;
+  const jump = (offset: number) => onPageChange(Math.max(0, Math.min(lastPage, data.page + offset)));
+
+  return <nav aria-label={`Transaction pages${top ? " (top)" : " (bottom)"}`}
+    className={`${top ? "d-none d-lg-flex mb-3" : "d-flex mt-4"} flex-wrap align-items-center justify-content-between gap-2`}>
+    <div className="d-flex gap-2">
+      <Button variant="outline-secondary" disabled={atStart} onClick={() => onPageChange(0)}>First</Button>
+      <Button variant="outline-secondary" disabled={atStart} aria-label="Go back 10 pages" onClick={() => jump(-10)}>−10</Button>
+      <Button variant="outline-secondary" disabled={atStart} onClick={() => jump(-1)}>Previous</Button>
+    </div>
+    <span className="small text-nowrap">Page {data.page + 1} of {data.totalPages}</span>
+    <div className="d-flex gap-2">
+      <Button variant="outline-secondary" disabled={atEnd} onClick={() => jump(1)}>Next</Button>
+      <Button variant="outline-secondary" disabled={atEnd} aria-label="Go forward 10 pages" onClick={() => jump(10)}>+10</Button>
+      <Button variant="outline-secondary" disabled={atEnd} onClick={() => onPageChange(lastPage)}>Last</Button>
+    </div>
+  </nav>;
+}
+
 export default function Transactions() {
   const { search } = useLocation();
   return <TransactionsList key={search} search={search} />;
@@ -294,6 +320,7 @@ function TransactionsList({ search }: { search: string }) {
             <Link to="/transactions/new" className="btn btn-success">Add transaction</Link>
           </div> : <>
             <p className="small text-secondary">{data.totalElements} transaction{data.totalElements === 1 ? "" : "s"}</p>
+            <TransactionPagination data={data} onPageChange={reload} top />
             <ul className="list-unstyled d-grid gap-3">
               {data.content.map((transaction) => <li key={transaction.id}>
                 <Card as="article" aria-labelledby={`transaction-${transaction.id}`}>
@@ -305,6 +332,7 @@ function TransactionsList({ search }: { search: string }) {
                         {amountFormat.format(transaction.amount)}
                       </span>
                     </div>
+                    {transaction.status === "SCHEDULED" && <p className="small text-primary mt-2 mb-1"><i className="bi bi-calendar-event me-1" aria-hidden="true" />Scheduled · Due {dateLabel(transaction.transactionDate)} · Not deducted yet</p>}
                     {transaction.transactionNature === "REIMBURSEMENT" && <ReimbursementLabel transaction={transaction} onShowOriginal={showOriginalTransaction} />}
                     {transaction.description && <p className="text-secondary text-break mt-2 mb-2" style={{ whiteSpace: "pre-wrap" }}>{transaction.description}</p>}
                     <p className="small text-secondary text-break mt-2 mb-1">
@@ -316,12 +344,12 @@ function TransactionsList({ search }: { search: string }) {
                     <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
                       <span className="small text-secondary"><time dateTime={transaction.transactionDate || undefined}>{dateLabel(transaction.transactionDate)}</time> · {transaction.transactionNature === "REIMBURSEMENT" ? "Reimbursement" : labels[transaction.type]}</span>
                       <div className="d-flex flex-wrap gap-2">
-                        {transaction.type === "INCOME" && transaction.transactionNature !== "REIMBURSEMENT" && <Button variant="outline-success" disabled={busy} onClick={() => markAsReimbursement(transaction)}>
+                        {transaction.status !== "SCHEDULED" && transaction.type === "INCOME" && transaction.transactionNature !== "REIMBURSEMENT" && <Button variant="outline-success" disabled={busy} onClick={() => markAsReimbursement(transaction)}>
                           Mark as reimbursement
                         </Button>}
-                        <Button variant="outline-secondary" disabled={busy} style={{ minWidth: 44, minHeight: 44 }} aria-label={`Edit ${title(transaction)}`} onClick={() => setEditing(transaction)}>
+                        {transaction.status !== "SCHEDULED" && <Button variant="outline-secondary" disabled={busy} style={{ minWidth: 44, minHeight: 44 }} aria-label={`Edit ${title(transaction)}`} onClick={() => setEditing(transaction)}>
                           <i className="bi bi-pencil-square" aria-hidden="true" />
-                        </Button>
+                        </Button>}
                         <Button variant="outline-danger" disabled={busy} style={{ minWidth: 44, minHeight: 44 }} aria-label={`Delete ${title(transaction)}`} onClick={() => { setDeleting(transaction); setDeleteError(null); }}>
                           <i className="bi bi-trash" aria-hidden="true" />
                         </Button>
@@ -331,11 +359,7 @@ function TransactionsList({ search }: { search: string }) {
                 </Card>
               </li>)}
             </ul>
-            <nav aria-label="Transaction pages" className="d-flex align-items-center justify-content-between gap-2 mt-4">
-              <Button variant="outline-secondary" disabled={data.first} onClick={() => reload(data.page - 1)}>Previous</Button>
-              <span className="small">Page {data.page + 1} of {data.totalPages}</span>
-              <Button variant="outline-secondary" disabled={data.last} onClick={() => reload(data.page + 1)}>Next</Button>
-            </nav>
+            <TransactionPagination data={data} onPageChange={reload} />
           </>}
         </>}
       </Col></Row>
@@ -350,7 +374,7 @@ function TransactionsList({ search }: { search: string }) {
       <Modal show={Boolean(deleting)} onHide={() => { if (!busy) setDeleting(null); }} centered backdrop={busy ? "static" : true} keyboard={!busy} aria-labelledby="delete-transaction-title">
         <Modal.Header closeButton={!busy}><Modal.Title id="delete-transaction-title" className="h5">Delete transaction?</Modal.Title></Modal.Header>
         <Modal.Body>
-          <p className="mb-0">Delete {deleting ? title(deleting) : "this transaction"}{deleting ? ` (${amountFormat.format(deleting.amount)})` : ""}? Its effect on your funding-source balances will be reversed.</p>
+          <p className="mb-0">Delete {deleting ? title(deleting) : "this transaction"}{deleting ? ` (${amountFormat.format(deleting.amount)})` : ""}? {deleting?.status === "SCHEDULED" ? "This removes the planned expense from your prediction without changing your current balance." : "Its effect on your funding-source balances will be reversed."}</p>
           {deleteError && <Alert variant="danger" role="alert" className="mt-3 mb-0">{deleteError}</Alert>}
         </Modal.Body>
         <Modal.Footer>

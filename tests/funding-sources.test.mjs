@@ -65,3 +65,24 @@ test('deletes the selected category and preserves backend conflict and not-found
     }
   }
 });
+
+test('category renaming sends only the trimmed name and returns the updated category', async () => {
+  let request;
+  globalThis.__fundingTestApi.patch = async (path, data) => {
+    request = { path, data };
+    return { data: { id: 23, name: data.name } };
+  };
+  assert.deepEqual(await profileService.renameCategory(23, ' Groceries '), { id: 23, name: 'Groceries' });
+  assert.deepEqual(request, { path: '/categories/23', data: { name: 'Groceries' } });
+  request = undefined;
+  await assert.rejects(profileService.renameCategory(23, '  '), /Enter a category name/);
+  assert.equal(request, undefined);
+});
+
+test('category renaming preserves server ownership and duplicate-name errors', async () => {
+  for (const status of [403, 404, 409]) {
+    const error = { isAxiosError: true, response: { status, data: { detail: 'Category rename rejected' } } };
+    globalThis.__fundingTestApi.patch = async () => { throw error; };
+    await assert.rejects(profileService.renameCategory(23, 'Groceries'), value => value === error);
+  }
+});

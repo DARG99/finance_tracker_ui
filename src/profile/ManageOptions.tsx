@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type SubmitEvent } from "react";
 import axios from "axios";
-import { Alert, Button, Card, Modal, Spinner } from "react-bootstrap";
+import { Alert, Button, Card, Form, Modal, Spinner } from "react-bootstrap";
 import { getApiErrorMessage } from "../api/errors";
 import { profileService } from "../services/profileService";
 import { transactionService, type TransactionOption } from "../services/transactionService";
@@ -28,6 +28,9 @@ export default function ManageOptions({ kind }: { kind: keyof typeof optionKinds
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [renaming, setRenaming] = useState<TransactionOption | null>(null);
+  const [name, setName] = useState("");
+  const [renameError, setRenameError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<TransactionOption | null>(null);
   const [busy, setBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -49,6 +52,23 @@ export default function ManageOptions({ kind }: { kind: keyof typeof optionKinds
     setLoading(true);
     setError(null);
     setAttempt((value) => value + 1);
+  }
+
+  async function rename(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!renaming || busy || !name.trim() || name.trim() === renaming.name.trim()) return;
+    setBusy(true);
+    setRenameError(null);
+    try {
+      const updated = await profileService.renameCategory(renaming.id, name);
+      setSources((current) => current.map((source) => source.id === updated.id ? updated : source));
+      setNotice(`Category renamed to ${updated.name}.`);
+      setRenaming(null);
+    } catch (error: unknown) {
+      setRenameError(getApiErrorMessage(error, "Unable to rename the category. Please try again."));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function remove() {
@@ -83,13 +103,35 @@ export default function ManageOptions({ kind }: { kind: keyof typeof optionKinds
           : <ul className="list-unstyled mb-0 d-grid gap-2">
             {sources.map((source) => <li key={source.id} className="d-flex align-items-center justify-content-between gap-3 border rounded p-2">
               <span className="text-break">{source.name}</span>
+              <div className="d-flex flex-wrap justify-content-end gap-2 flex-shrink-0">
+              {kind === "category" && <Button variant="outline-secondary" style={{ minHeight: 44 }} aria-label={`Rename ${source.name}`} onClick={() => {
+                setRenaming(source); setName(source.name); setRenameError(null);
+              }}>Rename</Button>}
               <Button variant="outline-danger" className="flex-shrink-0" style={{ minHeight: 44 }} aria-label={`Delete ${source.name}`} onClick={() => { setDeleting(source); setDeleteError(null); }}>
                 <i className="bi bi-trash me-2" aria-hidden="true" />Delete
               </Button>
+              </div>
             </li>)}
           </ul>)}
       </Card.Body>
     </Card>
+    <Modal show={Boolean(renaming)} onHide={() => { if (!busy) setRenaming(null); }} centered backdrop={busy ? "static" : true} keyboard={!busy} aria-labelledby="rename-category-title">
+      <Modal.Header closeButton={!busy}><Modal.Title id="rename-category-title" className="h5">Rename category</Modal.Title></Modal.Header>
+      <Form onSubmit={rename} aria-busy={busy}>
+        <Modal.Body>
+          <Form.Group controlId="rename-category-name">
+            <Form.Label>Name</Form.Label>
+            <Form.Control autoFocus required value={name} disabled={busy} onChange={(event) => { setName(event.target.value); setRenameError(null); }} />
+            <Form.Text>Linked transactions and subscriptions keep this category.</Form.Text>
+          </Form.Group>
+          {renameError && <Alert variant="danger" role="alert" className="mt-3 mb-0">{renameError}</Alert>}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" disabled={busy} onClick={() => setRenaming(null)}>Cancel</Button>
+          <Button type="submit" variant="success" disabled={busy || !name.trim() || name.trim() === renaming?.name.trim()}>{busy ? "Saving…" : "Save name"}</Button>
+        </Modal.Footer>
+      </Form>
+    </Modal>
     <Modal show={Boolean(deleting)} onHide={() => { if (!busy) setDeleting(null); }} centered backdrop={busy ? "static" : true} keyboard={!busy} aria-labelledby={`delete-${kind}-title`}>
       <Modal.Header closeButton={!busy}><Modal.Title id={`delete-${kind}-title`} className="h5">Delete {config.label}?</Modal.Title></Modal.Header>
       <Modal.Body>

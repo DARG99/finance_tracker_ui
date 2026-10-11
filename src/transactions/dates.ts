@@ -26,3 +26,12 @@ export function dateFiltersFromSearch(search: string): { from?: string; to?: str
   const to = parseDate(displayDate(params.get("to") ?? "")) ?? undefined;
   return from && to && from > to ? {} : { from, to };
 }
+
+export function localToday(): string {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+export function isFutureExpense(type: string, date: string | null | undefined): boolean {
+  return type === "EXPENSE" && Boolean(date && date > localToday());
+}

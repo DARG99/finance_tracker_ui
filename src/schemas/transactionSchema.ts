@@ -4,6 +4,7 @@ export const transactionSchema = z.object({
   id: z.number().int().positive(),
   type: z.enum(["EXPENSE", "INCOME", "TRANSFER"]),
   amount: z.number().positive(),
+  status: z.enum(["SCHEDULED", "POSTED"]).optional(),
   transactionNature: z.enum(["NORMAL", "REIMBURSEMENT"]).optional(),
   reimbursementForTransactionId: z.number().int().positive().nullish(),
   reimbursementForDescription: z.string().nullish(),

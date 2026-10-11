@@ -60,6 +60,15 @@ export const transactionService = {
     const response = await api.patch(`/transactions/${id}`, transaction);
     return transactionSchema.parse(response.data);
   },
+  // Dedicated routes fail safely on older servers instead of posting money immediately.
+  async schedule(transaction: NewTransaction): Promise<void> {
+    if (transaction.type !== "EXPENSE") throw new Error("Only expenses can be scheduled.");
+    await api.post("/transactions/scheduled", transaction);
+  },
+  async updateSchedule(id: number, transaction: TransactionUpdate) {
+    const response = await api.patch(`/transactions/${id}/schedule`, transaction);
+    return transactionSchema.parse(response.data);
+  },
   async remove(id: number): Promise<void> {
     await api.delete(`/transactions/${id}`);
   },

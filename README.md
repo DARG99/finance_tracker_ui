@@ -46,3 +46,12 @@ are never cached; viewing or changing finances requires an internet connection.
 - Check refresh 401 responses return to login and network/server failures allow
   retry without deleting credentials. Test airplane mode after worker installation.
 - Sign out and verify the current refresh token is sent to `/auth/logout`.
+
+## Scheduled expenses and predictions
+
+Choose a future date when adding an expense to schedule it. Funding-source cards
+show predicted money left through this month or next month (the default), including
+scheduled expenses and active subscriptions. Actual balances remain separate.
+
+This requires the backend endpoints and posting rules in
+[the scheduled-expenses API contract](docs/scheduled-expenses-api.md).

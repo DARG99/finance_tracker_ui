@@ -251,3 +251,38 @@ test('loads only the linked original transaction and preserves its description a
     responseData = springPage;
   }
 });
+
+test('scheduled expenses use dedicated routes and preserve posting status', async () => {
+  const expense = { type: 'EXPENSE', amount: 650, transactionDate: '2099-11-01', sourceFundingSourceId: 2, categoryId: 3 };
+  await transactionService.schedule(expense);
+  assert.deepEqual(request, { path: '/transactions/scheduled', method: 'POST', data: expense });
+  await assert.rejects(transactionService.schedule({ ...expense, type: 'INCOME' }), /Only expenses/);
+  const update = { amount: 700, transactionDate: '2099-12-01' };
+  responseData = { id: 42, ...expense, ...update, status: 'SCHEDULED' };
+  try {
+    const result = await transactionService.updateSchedule(42, update);
+    assert.deepEqual(request, { path: '/transactions/42/schedule', method: 'PATCH', data: update });
+    assert.equal(result.status, 'SCHEDULED');
+    assert.equal(transactionSchema.safeParse({ ...responseData, status: 'UNKNOWN' }).success, false);
+  } finally { responseData = springPage; }
+});
+
+test('scheduling errors never fall back to ordinary transaction posting', async () => {
+  const original = globalThis.__transactionTestApi.post;
+  const calls = [];
+  globalThis.__transactionTestApi.post = async (path) => { calls.push(path); throw new Error('Not supported'); };
+  try {
+    await assert.rejects(transactionService.schedule({ type: 'EXPENSE', amount: 10, transactionDate: '2099-01-01', sourceFundingSourceId: 1, categoryId: 1 }), /Not supported/);
+    assert.deepEqual(calls, ['/transactions/scheduled']);
+  } finally { globalThis.__transactionTestApi.post = original; }
+});
+
+test('only future expenses use scheduling, including at year boundaries', async () => {
+  const { isFutureExpense, localToday } = await import(moduleUrl(compile('../src/transactions/dates.ts')));
+  assert.equal(isFutureExpense('EXPENSE', localToday()), false);
+  assert.equal(isFutureExpense('EXPENSE', '2000-12-31'), false);
+  assert.equal(isFutureExpense('EXPENSE', '2099-01-01'), true);
+  assert.equal(isFutureExpense('INCOME', '2099-01-01'), false);
+  assert.equal(isFutureExpense('TRANSFER', '2099-01-01'), false);
+  assert.equal(isFutureExpense('EXPENSE', null), false);
+});

@@ -77,7 +77,7 @@
   gap: clamp(2px, 1vw, 12px);
   flex: 1;
   min-width: 0;
-  background: repeating-linear-gradient(to top, transparent 0, transparent calc(50% - 1px), #e9ecef calc(50% - 1px), #e9ecef 50%);
+  background: repeating-linear-gradient(to top, transparent 0, transparent calc(50% - 1px), var(--bs-border-color) calc(50% - 1px), var(--bs-border-color) 50%);
   background-size: 100% calc(100% - 28px);
   background-repeat: no-repeat;
 }
@@ -112,7 +112,7 @@
 .dashboard-category-track {
   height: 12px;
   border-radius: 999px;
-  background: #edf0f2;
+  background: var(--bs-tertiary-bg);
 }
 
 .dashboard-account-icon {
@@ -145,4 +145,11 @@
 .dashboard-month-bar-negative {
   border-radius: 0 0 6px 6px;
   background: #526ac7;
+}
+
+.dashboard-balances {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.75rem;
 }

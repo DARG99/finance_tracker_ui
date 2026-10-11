@@ -1,4 +1,4 @@
-import { displayDate, parseDate } from "./dates";
+import { displayDate, parseDate, isFutureExpense } from "./dates";
 import { useEffect, useState, type SubmitEvent } from "react";
 import { Alert, Button, Card, Col, Container, Form, Row, Spinner } from "react-bootstrap";
 import "./AddTransaction.css";
@@ -64,6 +64,7 @@ export default function AddTransaction() {
       : type === "INCOME"
         ? hasDestination
         : hasSource && hasDestination && source !== destination);
+  const scheduled = isFutureExpense(type, parseDate(date));
   const canSubmit = !saving && !unavailable && hasRequiredFields;
 
   async function submit(event: SubmitEvent<HTMLFormElement>) {
@@ -89,8 +90,8 @@ export default function AddTransaction() {
         : { ...common, type, sourceFundingSourceId: Number(source), destinationFundingSourceId: Number(destination), description: optionalDescription };
     setSaving(true);
     try {
-      await transactionService.create(transaction);
-      setSuccess(`${type === "INCOME" && reimbursement ? "Reimbursement" : selectedType.label} added successfully.`);
+      await (scheduled ? transactionService.schedule(transaction) : transactionService.create(transaction));
+      setSuccess(scheduled ? "Expense scheduled. Your balance will change when it is due." : `${type === "INCOME" && reimbursement ? "Reimbursement" : selectedType.label} added successfully.`);
       setReimbursement(false);
       setOriginalExpense(null);
       setAmount("");
@@ -107,7 +108,7 @@ export default function AddTransaction() {
   }
 
   return (
-    <div className="transaction-page bg-light">
+    <div className="transaction-page bg-body-tertiary">
       <Container as="main" className="px-3 py-2 py-md-4">
         <Row className="justify-content-center">
           <Col xs={12} md={9} lg={7} xl={6} className="transaction-column">
@@ -118,7 +119,7 @@ export default function AddTransaction() {
                 <div role="group" aria-label="Transaction type" className="d-flex gap-2 mb-4">
                   {transactionTypes.map((option) => (
                     <Button key={option.value} variant={type === option.value ? option.color : `outline-${option.color}`}
-                      className={`flex-fill py-3 px-1${option.value === "TRANSFER" && type !== "TRANSFER" ? " text-dark" : ""}`}
+                      className={`flex-fill py-3 px-1${option.value === "TRANSFER" && type !== "TRANSFER" ? " text-body" : ""}`}
                       aria-pressed={type === option.value} disabled={saving}
                       onClick={() => { setType(option.value); setReimbursement(false); setOriginalExpense(null); setError(null); setSuccess(null); }}>
                       {option.label}
@@ -144,6 +145,9 @@ export default function AddTransaction() {
                         </Form.Group>
                       </Col>
                     </Row>
+                    {type === "EXPENSE" && <p className="small text-secondary" role="status">
+                      {scheduled ? `Scheduled for ${date}. Only your prediction changes now; your balance and spending totals change when it is due.` : "Choose a future date to schedule an expense without changing your current balance."}
+                    </p>}
                     <div className="d-grid gap-2 align-items-end mb-3" style={{ gridTemplateColumns: type === "TRANSFER" ? "minmax(0, 1fr) auto minmax(0, 1fr)" : "minmax(0, 1fr)" }}>
                     {type !== "INCOME" && <Form.Group controlId="transaction-source" style={{ minWidth: 0 }}>
                       <Form.Label>{type === "TRANSFER" ? "From" : "Funding source"}</Form.Label>
@@ -195,7 +199,7 @@ export default function AddTransaction() {
                     </Form.Group>
                     <Button type="submit" variant={selectedType.color} className="transaction-submit w-100 py-3 mt-2" disabled={!canSubmit}>
                       {saving && <Spinner as="span" size="sm" className="me-2" aria-hidden="true" />}
-                      {saving ? "Saving…" : `Add ${type === "INCOME" && reimbursement ? "reimbursement" : selectedType.label.toLowerCase()}`}
+                      {saving ? "Saving…" : scheduled ? "Schedule expense" : `Add ${type === "INCOME" && reimbursement ? "reimbursement" : selectedType.label.toLowerCase()}`}
                     </Button>
                   </fieldset>
                 </Form>

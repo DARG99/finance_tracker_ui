@@ -1,4 +1,4 @@
-import { displayDate, parseDate } from "./dates";
+import { displayDate, parseDate, isFutureExpense } from "./dates";
 import { useEffect, useState, type SubmitEvent } from "react";
 import { Alert, Button, Col, Form, Modal, Row, Spinner } from "react-bootstrap";
 import { getApiErrorMessage } from "../api/errors";
@@ -26,6 +26,7 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const type = transaction.type;
+  const scheduled = isFutureExpense(type, parseDate(date));
 
   useEffect(() => {
     const controller = new AbortController();
@@ -74,7 +75,9 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
     setSaving(true);
     setError(null);
     try {
-      const updated = await transactionService.update(transaction.id, update);
+      const updated = await (scheduled || transaction.status === "SCHEDULED"
+        ? transactionService.updateSchedule(transaction.id, update)
+        : transactionService.update(transaction.id, update));
       onSaved(updated);
     } catch (error: unknown) {
       setError(getApiErrorMessage(error, "Unable to save changes. Please try again."));
@@ -104,6 +107,13 @@ export default function EditTransactionModal({ transaction, onClose, onSaved }: 
                 <Form.Control type="text" placeholder="dd/mm/yyyy" maxLength={10} required value={date} isInvalid={date.length > 0 && parseDate(date) === null} onChange={(event) => setDate(event.target.value)} />
               </Form.Group></Col>
             </Row>
+            {type === "EXPENSE" && <p className="small text-secondary" role="status">
+              {scheduled
+                ? transaction.status === "POSTED" || !transaction.status
+                  ? "Moving this expense into the future restores its current balance effect until the new due date. It will count toward your prediction."
+                  : "This expense only affects your prediction until its due date."
+                : transaction.status === "SCHEDULED" ? "Choosing today or a past date applies this expense to your balance now." : "Choose a future date to schedule this expense."}
+            </p>}
             <Row className="g-3 mb-3">
               {type !== "INCOME" && <Col xs={type === "TRANSFER" ? 6 : 12}><Form.Group controlId="edit-source">
                 <Form.Label>{type === "TRANSFER" ? "From" : "Funding source"}</Form.Label>

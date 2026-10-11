@@ -1,6 +1,8 @@
+import ThemeSwitch from "../theme/ThemeSwitch";
+import FundingForecast from "./FundingForecast";
 import { useEffect, useState, type SubmitEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Alert, Badge, Button, Card, Col, Container, Form, Navbar, Row, Spinner } from "react-bootstrap";
+import { Alert, Button, Card, Col, Container, Form, Navbar, Row, Spinner } from "react-bootstrap";
 import { authService } from "../services/authService";
 import type { DashboardData } from "./dashboardData";
 import { dashboardService } from "../services/dashboardService";
@@ -35,11 +37,12 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="dashboard-page bg-light text-body">
-      <Navbar as="header" className="bg-white border-bottom py-3">
+    <div className="dashboard-page bg-body-tertiary text-body">
+      <Navbar as="header" className="bg-body border-bottom py-3">
         <Container className="gap-2 px-3 px-sm-4">
           <Navbar.Brand as="span" className="fw-bold m-0 text-wrap">Finance Tracker</Navbar.Brand>
           <div className="d-flex align-items-center gap-2">
+            <ThemeSwitch />
             <Link to="/profile" className="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center" style={{ minWidth: 44, minHeight: 44 }} aria-label="Profile" title="Profile">
               <i className="bi bi-person-circle fs-5" aria-hidden="true" />
             </Link>
@@ -181,28 +184,6 @@ function DashboardOverview({ data, year, currency = "EUR" }: { data: DashboardDa
           </Col>
         </Row>
 
-        <section className="mt-4 mt-md-5" aria-labelledby="accounts-title">
-          <div className="d-flex align-items-center gap-2 mb-3">
-            <h2 id="accounts-title" className="h5 mb-0">Funding sources</h2>
-            <Badge bg="secondary" pill>{data.fundingSources.length}</Badge>
-          </div>
-          {data.fundingSources.length === 0 ? <p className="text-secondary">No funding sources available.</p> :
-            <Row xs={1} md={3} className="g-3">
-              {data.fundingSources.map((source) => <Col key={source.id}>
-                <Card className="h-100 border-0 shadow-sm">
-                  <Card.Body className="p-3 p-md-4 d-flex gap-3 align-items-center">
-                    <span className="dashboard-account-icon bg-success-subtle text-success rounded-3 d-inline-flex align-items-center justify-content-center flex-shrink-0">
-                      <i className="bi bi-wallet2 fs-4" aria-hidden="true" />
-                    </span>
-                    <div style={{ minWidth: 0 }}>
-                      <h3 className="h6 text-break mb-1">{source.name}</h3>
-                      <p className={`fs-4 fw-semibold text-break mb-0${source.balance < 0 ? " text-danger" : ""}`}>{money.format(source.balance)}</p>
-                      <span className="small text-secondary">Current balance</span>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>)}
-            </Row>}
-        </section>
+        <FundingForecast sources={data.fundingSources} currency={currency} />
   </>;
 }

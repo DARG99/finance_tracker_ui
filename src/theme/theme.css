@@ -1,0 +1,32 @@
+.theme-switch {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.theme-switch .form-check-input {
+  cursor: pointer;
+}
+
+[data-bs-theme="dark"] .text-success {
+  color: var(--bs-success-text-emphasis) !important;
+}
+
+[data-bs-theme="dark"] .text-danger {
+  color: var(--bs-danger-text-emphasis) !important;
+}
+
+[data-bs-theme="dark"] .text-primary {
+  color: var(--bs-primary-text-emphasis) !important;
+}
+
+[data-bs-theme="dark"] .btn-outline-success {
+  --bs-btn-color: var(--bs-success-text-emphasis);
+}
+
+[data-bs-theme="dark"] .btn-outline-danger {
+  --bs-btn-color: var(--bs-danger-text-emphasis);
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary {
+  --bs-btn-color: var(--bs-secondary-text-emphasis);
+}
