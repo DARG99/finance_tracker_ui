@@ -50,8 +50,9 @@ are never cached; viewing or changing finances requires an internet connection.
 ## Scheduled expenses and predictions
 
 Choose a future date when adding an expense to schedule it. Funding-source cards
-show predicted money left through this month or next month (the default), including
-scheduled expenses and active subscriptions. Actual balances remain separate.
+show money left before payday, including scheduled expenses and active
+subscriptions. Set your monthly payday on the dashboard to enable predictions.
+Actual balances remain separate.
 
-This requires the backend endpoints and posting rules in
+Backend endpoints, payday setup, and posting rules are documented in
 [the scheduled-expenses API contract](docs/scheduled-expenses-api.md).
