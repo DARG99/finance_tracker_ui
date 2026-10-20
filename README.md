@@ -49,6 +49,10 @@ are never cached; viewing or changing finances requires an internet connection.
 
 ## Scheduled expenses and predictions
 
+The Dashboard category chart supports an All year/month selector. Monthly data
+requires the backend field described in the
+[monthly category spending API contract](docs/dashboard-category-spending-api.md).
+
 Choose a future date when adding an expense to schedule it. Funding-source cards
 show money left before payday, including scheduled expenses and active
 subscriptions. Set your monthly payday on the dashboard to enable predictions.

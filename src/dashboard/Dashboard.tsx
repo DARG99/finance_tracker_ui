@@ -94,6 +94,10 @@ function DashboardReport({ year }: { year: number }) {
 }
 
 function DashboardOverview({ data, year, currency = "EUR" }: { data: DashboardData; year: number; currency?: string }) {
+  const [categoryMonth, setCategoryMonth] = useState(0);
+  const categories = categoryMonth === 0 ? data.spendingByCategory
+    : data.monthlySpendingByCategory?.filter((item) => item.month === categoryMonth);
+  const categoryPeriod = categoryMonth === 0 ? String(year) : `${months[categoryMonth - 1]} ${year}`;
   const money = new Intl.NumberFormat(undefined, { style: "currency", currency });
   const compactMoney = new Intl.NumberFormat(undefined, { style: "currency", currency, notation: "compact", maximumFractionDigits: 1 });
   const monthly = [...data.monthlySpending].sort((a, b) => a.month - b.month);
@@ -101,7 +105,7 @@ function DashboardOverview({ data, year, currency = "EUR" }: { data: DashboardDa
   const monthlyMax = Math.max(monthlyMin === 0 ? 1 : 0, ...monthly.map((item) => item.amount));
   const monthlyRange = monthlyMax - monthlyMin;
   const zeroPosition = monthlyMax / monthlyRange * 100;
-  const categoryMax = Math.max(1, ...data.spendingByCategory.map((item) => item.amount));
+  const categoryMax = Math.max(1, ...(categories ?? []).map((item) => item.amount));
   const summary = [
     { label: "Income", amount: data.allTimeIncome, hint: "All time", tone: "success", icon: "arrow-down-left" },
     { label: "Net expenses", amount: data.allTimeExpense, hint: "All time", tone: "danger", icon: "arrow-up-right" },
@@ -166,10 +170,17 @@ function DashboardOverview({ data, year, currency = "EUR" }: { data: DashboardDa
           <Col xs={12} lg={5}>
             <Card as="section" className="h-100 border-0 shadow-sm" aria-labelledby="category-title">
               <Card.Body className="p-3 p-md-4">
-                <h2 id="category-title" className="h5 mb-4">Spending by category · {year}</h2>
-                {data.spendingByCategory.length === 0 ? <p className="text-secondary py-5 text-center">No category spending available.</p> :
+                <h2 id="category-title" className="h5 mb-3">Spending by category · {categoryPeriod}</h2>
+                <Form.Group controlId="category-month" className="mb-4">
+                  <Form.Label className="small">Category spending period</Form.Label>
+                  <Form.Select value={categoryMonth} onChange={(event) => setCategoryMonth(Number(event.target.value))}>
+                    <option value={0}>All year</option>
+                    {months.map((month, index) => <option key={month} value={index + 1}>{month} {year}</option>)}
+                  </Form.Select>
+                </Form.Group>
+                {categories === undefined ? <p role="status" className="text-secondary py-5 text-center">Monthly category spending is not available yet.</p> : categories.length === 0 ? <p role="status" className="text-secondary py-5 text-center">No category spending for {categoryPeriod}.</p> :
                   <ul className="list-unstyled d-grid gap-4 mb-0">
-                    {data.spendingByCategory.map((item, index) => <li key={item.categoryId}>
+                    {categories.map((item, index) => <li key={item.categoryId}>
                       <div className="d-flex flex-wrap justify-content-between gap-2 mb-2">
                         <span className="text-break">{item.categoryName}</span>
                         <span className="fw-semibold">{money.format(item.amount)}</span>

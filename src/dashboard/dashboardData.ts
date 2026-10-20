@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+const categorySpendingSchema = z.object({
+  categoryId: z.number().int().positive(),
+  categoryName: z.string(),
+  amount: z.number().nonnegative(),
+});
+
 export const dashboardSchema = z.object({
   allTimeIncome: z.number(),
   allTimeExpense: z.number(),
@@ -14,11 +20,10 @@ export const dashboardSchema = z.object({
     month: z.number().int().min(1).max(12),
     amount: z.number(),
   })),
-  spendingByCategory: z.array(z.object({
-    categoryId: z.number().int().positive(),
-    categoryName: z.string(),
-    amount: z.number().nonnegative(),
-  })),
+  spendingByCategory: z.array(categorySpendingSchema),
+  monthlySpendingByCategory: z.array(categorySpendingSchema.extend({
+    month: z.number().int().min(1).max(12),
+  })).optional(),
 });
 
 export type DashboardData = z.infer<typeof dashboardSchema>;
