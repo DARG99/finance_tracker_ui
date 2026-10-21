@@ -1,4 +1,4 @@
-import { dateFiltersFromSearch, displayDate } from "./dates";
+import { transactionFiltersFromSearch, displayDate } from "./dates";
 import { useEffect, useState } from "react";
 import { Alert, Button, Card, Col, Container, Form, Modal, Row, Spinner } from "react-bootstrap";
 import { Link, useLocation } from "react-router-dom";
@@ -55,7 +55,7 @@ export default function Transactions() {
 function TransactionsList({ search }: { search: string }) {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(50);
-  const [filters, setFilters] = useState<TransactionFilters>(() => dateFiltersFromSearch(search));
+  const [filters, setFilters] = useState<TransactionFilters>(() => transactionFiltersFromSearch(search));
   const [originalTransactionId, setOriginalTransactionId] = useState<number | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [description, setDescription] = useState("");
@@ -214,6 +214,9 @@ function TransactionsList({ search }: { search: string }) {
               {(filters.from || filters.to) && <span className="small text-secondary">
                 {filters.from ? displayDate(filters.from) : "Any date"} – {filters.to ? displayDate(filters.to) : "Any date"}
               </span>}
+              {filters.categoryId && <span className="badge text-bg-secondary">
+                {categories.find((category) => category.id === filters.categoryId)?.name ?? `Category #${filters.categoryId}`}
+              </span>}
               {originalTransactionId && <span className="badge text-bg-info">Original transaction #{originalTransactionId}</span>}
               {hasFilters && <Button variant="link" size="sm" onClick={() => {
                 setOriginalTransactionId(null);
@@ -255,6 +258,7 @@ function TransactionsList({ search }: { search: string }) {
                   <Form.Label>Category</Form.Label>
                   <Form.Select disabled={categoriesLoading || Boolean(categoriesError)} value={filters.categoryId ?? ""} onChange={(event) => changeFilters({ categoryId: event.target.value ? Number(event.target.value) : undefined })}>
                     <option value="">{categoriesLoading ? "Loading categories…" : "All categories"}</option>
+                    {filters.categoryId && !categories.some((category) => category.id === filters.categoryId) && <option value={filters.categoryId}>Category #{filters.categoryId}</option>}
                     {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
                   </Form.Select>
                 </Form.Group>

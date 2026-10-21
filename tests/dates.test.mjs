@@ -42,3 +42,28 @@ test('chart navigation reads only date filters and discards invalid ranges', () 
   assert.deepEqual(dateFiltersFromSearch('?from=2026-02-30&to=invalid'), { from: undefined, to: undefined });
   assert.deepEqual(dateFiltersFromSearch('?from=2026-09-30&to=2026-09-01'), {});
 });
+
+test('category navigation round-trips the selected category and calendar period', async () => {
+  const { categoryTransactionsUrl, transactionFiltersFromSearch } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+  for (const [year, month, from, to] of [
+    [2024, 2, '2024-02-01', '2024-02-29'],
+    [2026, 2, '2026-02-01', '2026-02-28'],
+    [2026, 12, '2026-12-01', '2026-12-31'],
+    [2026, 0, '2026-01-01', '2026-12-31'],
+    [1, 0, '0001-01-01', '0001-12-31'],
+    [9999, 0, '9999-01-01', '9999-12-31'],
+  ]) {
+    const url = new URL(categoryTransactionsUrl(year, month, 7), 'https://example.test');
+    assert.equal(url.pathname, '/transactions');
+    assert.deepEqual(transactionFiltersFromSearch(url.search), { from, to, categoryId: 7 });
+    assert.deepEqual(Object.keys(Object.fromEntries(url.searchParams)).sort(), ['categoryId', 'from', 'to']);
+  }
+});
+
+test('category URL filters reject invalid IDs while preserving valid dates', async () => {
+  const { transactionFiltersFromSearch } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+  for (const id of ['', '0', '-1', '1.5', 'NaN', 'Infinity', '1e2', '9007199254740992']) {
+    assert.deepEqual(transactionFiltersFromSearch(`?categoryId=${id}&from=2026-09-01`), { from: '2026-09-01', to: undefined });
+  }
+  assert.deepEqual(transactionFiltersFromSearch('?categoryId=7&from=2026-09-30&to=2026-09-01'), { categoryId: 7 });
+});

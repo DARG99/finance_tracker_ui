@@ -20,6 +20,23 @@ export function monthTransactionsUrl(year: number, month: number): string {
   return `/transactions?${new URLSearchParams({ from: `${prefix}-01`, to: `${prefix}-${lastDay.getUTCDate()}` })}`;
 }
 
+export function categoryTransactionsUrl(year: number, month: number, categoryId: number): string {
+  const annualYear = String(year).padStart(4, "0");
+  const params = month === 0
+    ? new URLSearchParams({ from: `${annualYear}-01-01`, to: `${annualYear}-12-31` })
+    : new URLSearchParams(monthTransactionsUrl(year, month).split("?")[1]);
+  params.set("categoryId", String(categoryId));
+  return `/transactions?${params}`;
+}
+
+export function transactionFiltersFromSearch(search: string): { from?: string; to?: string; categoryId?: number } {
+  const filters = dateFiltersFromSearch(search);
+  const category = new URLSearchParams(search).get("categoryId") ?? "";
+  const categoryId = Number(category);
+  return /^[1-9]\d*$/.test(category) && Number.isSafeInteger(categoryId)
+    ? { ...filters, categoryId } : filters;
+}
+
 export function dateFiltersFromSearch(search: string): { from?: string; to?: string } {
   const params = new URLSearchParams(search);
   const from = parseDate(displayDate(params.get("from") ?? "")) ?? undefined;

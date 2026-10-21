@@ -8,7 +8,7 @@ import type { DashboardData } from "./dashboardData";
 import { dashboardService } from "../services/dashboardService";
 import { getApiErrorMessage } from "../api/errors";
 import "./Dashboard.css";
-import { monthTransactionsUrl } from "../transactions/dates";
+import { categoryTransactionsUrl, monthTransactionsUrl } from "../transactions/dates";
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const categoryColors = ["#198754", "#526ac7", "#b36b12", "#8b5bb5", "#16808a"];
@@ -181,6 +181,7 @@ function DashboardOverview({ data, year, currency = "EUR" }: { data: DashboardDa
                 {categories === undefined ? <p role="status" className="text-secondary py-5 text-center">Monthly category spending is not available yet.</p> : categories.length === 0 ? <p role="status" className="text-secondary py-5 text-center">No category spending for {categoryPeriod}.</p> :
                   <ul className="list-unstyled d-grid gap-4 mb-0">
                     {categories.map((item, index) => <li key={item.categoryId}>
+                      <Link className="dashboard-category-link" to={categoryTransactionsUrl(year, categoryMonth, item.categoryId)} aria-label={`View ${item.categoryName} transactions for ${categoryPeriod}. Spending: ${money.format(item.amount)}`}>
                       <div className="d-flex flex-wrap justify-content-between gap-2 mb-2">
                         <span className="text-break">{item.categoryName}</span>
                         <span className="fw-semibold">{money.format(item.amount)}</span>
@@ -188,6 +189,7 @@ function DashboardOverview({ data, year, currency = "EUR" }: { data: DashboardDa
                       <div className="dashboard-category-track" aria-hidden="true">
                         <div className="h-100 rounded-pill" style={{ width: `${item.amount / categoryMax * 100}%`, backgroundColor: categoryColors[index % categoryColors.length] }} />
                       </div>
+                      </Link>
                     </li>)}
                   </ul>}
               </Card.Body>

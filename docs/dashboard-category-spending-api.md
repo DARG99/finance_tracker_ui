@@ -57,3 +57,60 @@ change the dashboard year; the category selector resets to All year.
 
 Older backend responses still load the annual chart. Choosing a month without
 the new field displays “Monthly category spending is not available yet.”
+
+## Category links to filtered transactions
+
+Clicking a category name, amount, or bar opens Transactions with that category
+and the selected period applied. All year selects January 1–December 31 of the
+selected dashboard year; a month selects its first through last calendar day.
+The active category and dates are visible above the list. Users can change or
+clear these filters normally. Links work on refresh and with browser navigation.
+
+Example frontend URL for Food (category 1), February 2026:
+
+```text
+/transactions?from=2026-02-01&to=2026-02-28&categoryId=1
+```
+
+The frontend uses the existing endpoint, initially requesting:
+
+```http
+GET /api/transactions?page=0&size=50&categoryId=1&from=2026-02-01&to=2026-02-28
+```
+
+### Backend implementation checklist
+
+No new endpoint or response fields are required for these links. If the existing
+transaction endpoint already implements the following contract, only the monthly
+overview field described above needs backend work:
+
+- Accept `categoryId` as a positive integer, and `from` / `to` as ISO calendar
+  dates (`YYYY-MM-DD`). Validate dates and reject reversed ranges with HTTP 400.
+- Combine category and date constraints with AND, scoped to the authenticated
+  user. Filter by the stable category ID returned in the dashboard, not its name.
+  Never return another user's transactions, even for a supplied category ID.
+- Treat both date endpoints as inclusive. Use the same transaction-date and
+  timezone rules as the overview. For timestamp storage, include the whole final
+  day (typically before the start of the next day), with safe handling of 9999-12-31.
+- Apply filters before pagination and counting. Return the existing transaction
+  page shape with filtered `totalElements`, `totalPages`, and first/last flags.
+  Keep ordering deterministic across pages, using an ID tie-breaker as needed.
+- Preserve existing behavior for deleted categories; historical category IDs
+  returned by the overview must remain usable for filtering historical records.
+
+The link intentionally applies only category and date filters. It shows all
+matching transactions under the existing listing rules, including scheduled
+records if the endpoint normally returns them. It does not set an expense,
+posting-status, or reimbursement filter. Consequently, list amounts are not
+promised to sum to the dashboard's posted/net spending total. Reimbursements
+without that category association follow the existing category-filter rules.
+
+### Verification for category navigation
+
+Test a category with transactions inside and outside the selected month, another
+category in the same month, February in leap and non-leap years, December, and
+All year. Verify combined filters on every page, accurate filtered counts, empty
+results, ownership isolation, and transactions on both date boundaries. In the
+UI, check keyboard activation, direct-link refresh, browser back/forward,
+changing filters, clearing filters, and a historical category missing from the
+current category options.
